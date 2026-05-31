@@ -1,0 +1,17 @@
+---
+description: lowcode-wrapper 项目约定与 FDW sidecar 架构
+alwaysApply: true
+---
+
+# lowcode-wrapper
+
+- Go 1.21+ HTTP 服务，`net/http` + JSON，**无 gRPC/protobuf**
+- **单 Meta DB**：`DATABASE_URL` 存 wrapper_* 元数据；启动时 `store.Migrate` 自动建表
+- **凭据**：`WRAPPER_MASTER_KEY`（32-byte base64）+ AES-256-GCM；`credentialRef` 引用 UUID，spec 不落明文
+- **Admin API**：`/api/credentials`、`/api/servers`、`/api/tables`、`/api/functions`
+- **数据 API**：PostgREST 风格 `/v1/{schema}/{table}`、`POST /v1/rpc/{fn}`
+- **驱动**：`internal/driver` 注册表；新协议实现 `driver.Driver` 并在包 `init()` 中 `Register`
+- HTTP auth：`internal/auth/httpauth.go`（NONE / BASIC / API_KEY / BEARER / CLIENT_CREDENTIALS / UNIVERSAL）
+- 列映射：本地 `wrapper_column.name` → 远程 `remote_name`；filter/body 经 `postgrest.MapRowToRemote` / `MapFilters`
+- 测试：`make test`；集成测试需 `DATABASE_URL`（`internal/integration/`）
+- 小 diff，匹配现有 handler / store / driver 布局；未要求不 git commit

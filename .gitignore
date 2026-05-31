@@ -1,0 +1,37 @@
+# Binaries（make build → bin/server）
+bin/
+/bin/
+/lowcode-wrapper
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test / coverage
+*.test
+*.out
+coverage.*
+
+# Go workspace / vendor
+vendor/
+
+# Env and secrets（WRAPPER_MASTER_KEY、DATABASE_URL 等）
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs / temp
+*.log
+/tmp/
+
+# Docker local volumes
+.docker-volumn/
+docker-volumes/
