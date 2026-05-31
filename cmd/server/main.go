@@ -41,6 +41,7 @@ func main() {
 	engine := service.NewEngine(s)
 	mux := http.NewServeMux()
 	api.RegisterPlayground(mux)
+	api.RegisterOpenAPI(mux)
 	api.NewAdminHandler(s).Register(mux)
 	api.NewPostgRESTHandler(engine).Register(mux)
 
@@ -52,6 +53,7 @@ func main() {
 	logx.Component("server").Info("listening",
 		"addr", "http://localhost:"+port,
 		"playground", "/playground/",
+		"swagger", "/swagger/",
 	)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		slog.Error("server stopped", "err", err)

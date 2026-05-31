@@ -14,6 +14,8 @@ make run
 
 Playground UI: http://localhost:3020/playground/
 
+API docs (OpenAPI + Swagger UI): http://localhost:3020/swagger/ — spec at `/openapi/openapi.yaml`
+
 ## Docker
 
 ```bash

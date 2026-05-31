@@ -1,0 +1,699 @@
+openapi: 3.0.3
+info:
+  title: lowcode-wrapper API
+  description: |
+    PostgREST-style FDW sidecar: Admin API registers foreign servers/tables/functions;
+    Data API proxies CRUD and RPC to remote sources (http, postgres, mysql, file, mongo, redis, s3, notion, firebase).
+
+    **Playground:** `/playground/` — interactive request UI.
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3020
+    description: Local dev (see PORT in .env)
+
+tags:
+  - name: Health
+  - name: Admin — Credentials
+  - name: Admin — Servers
+  - name: Admin — Tables
+  - name: Admin — Functions
+  - name: Data API
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /api/credentials:
+    post:
+      tags: [Admin — Credentials]
+      summary: Create credential (secrets encrypted at rest)
+      operationId: createCredential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCredentialRequest"
+      responses:
+        "201":
+          description: Created (plaintext secrets are never returned)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/credentials/{id}:
+    delete:
+      tags: [Admin — Credentials]
+      summary: Delete credential
+      operationId: deleteCredential
+      parameters:
+        - $ref: "#/components/parameters/UuidPath"
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/servers:
+    get:
+      tags: [Admin — Servers]
+      summary: List foreign servers
+      operationId: listServers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Server"
+        "400":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Admin — Servers]
+      summary: Register foreign server
+      operationId: createServer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServerRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Server"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/servers/{id}:
+    patch:
+      tags: [Admin — Servers]
+      summary: Update server
+      operationId: updateServer
+      parameters:
+        - $ref: "#/components/parameters/UuidPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServerRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Server"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Admin — Servers]
+      summary: Delete server
+      operationId: deleteServer
+      parameters:
+        - $ref: "#/components/parameters/UuidPath"
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/tables:
+    get:
+      tags: [Admin — Tables]
+      summary: List foreign tables
+      operationId: listTables
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Table"
+        "400":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Admin — Tables]
+      summary: Register foreign table and columns
+      operationId: createTable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTableRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTableResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /api/tables/{schemaName}/{tableName}/columns:
+    get:
+      tags: [Admin — Tables]
+      summary: List columns for a table
+      operationId: listTableColumns
+      parameters:
+        - $ref: "#/components/parameters/SchemaName"
+        - $ref: "#/components/parameters/TableName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Column"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/functions:
+    get:
+      tags: [Admin — Functions]
+      summary: List RPC / table-operation functions
+      operationId: listFunctions
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Function"
+        "400":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Admin — Functions]
+      summary: Register function mapping
+      operationId: createFunction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFunctionRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Function"
+        "400":
+          $ref: "#/components/responses/Error"
+
+  /v1/{schema}/{table}:
+    parameters:
+      - $ref: "#/components/parameters/SchemaPath"
+      - $ref: "#/components/parameters/TablePath"
+    get:
+      tags: [Data API]
+      summary: SELECT rows
+      description: |
+        PostgREST-style query params on column names (local names).
+        Filters: `{column}=eq.{value}` (also `neq`, `gt`, `gte`, `lt`, `lte`, `like`, `in`, `is`).
+        Reserved: `select`, `order`, `limit`, `offset`.
+      operationId: selectRows
+      parameters:
+        - $ref: "#/components/parameters/PostgRESTQuery"
+      responses:
+        "200":
+          description: Row set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RowArray"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Data API]
+      summary: INSERT row (or UPSERT with Prefer)
+      operationId: insertRow
+      parameters:
+        - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RowObject"
+      responses:
+        "201":
+          description: Created (body empty unless Prefer return=representation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RowObject"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Data API]
+      summary: UPDATE rows matching filters
+      operationId: updateRows
+      parameters:
+        - $ref: "#/components/parameters/PostgRESTQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RowObject"
+      responses:
+        "200":
+          description: Affected row count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Affected"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Data API]
+      summary: DELETE rows matching filters
+      operationId: deleteRows
+      parameters:
+        - $ref: "#/components/parameters/PostgRESTQuery"
+      responses:
+        "200":
+          description: Affected row count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Affected"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /v1/rpc/{functionName}:
+    post:
+      tags: [Data API]
+      summary: Invoke RPC function
+      operationId: invokeRPC
+      parameters:
+        - name: functionName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schema
+          in: query
+          description: Function schema (default `public`)
+          schema:
+            type: string
+            default: public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RowObject"
+      responses:
+        "200":
+          description: RPC result (shape depends on remote)
+          content:
+            application/json:
+              schema: {}
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+components:
+  parameters:
+    UuidPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SchemaName:
+      name: schemaName
+      in: path
+      required: true
+      schema:
+        type: string
+        example: public
+    TableName:
+      name: tableName
+      in: path
+      required: true
+      schema:
+        type: string
+    SchemaPath:
+      name: schema
+      in: path
+      required: true
+      schema:
+        type: string
+        example: public
+    TablePath:
+      name: table
+      in: path
+      required: true
+      schema:
+        type: string
+    PreferHeader:
+      name: Prefer
+      in: header
+      description: |
+        `return=representation` — return inserted/updated row in response.
+        `resolution=merge-duplicates` — UPSERT on POST.
+      schema:
+        type: string
+        example: return=representation
+    PostgRESTQuery:
+      name: filters
+      in: query
+      style: form
+      explode: true
+      description: |
+        Example: `id=eq.1&select=id,name&order=created_at.desc&limit=10&offset=0`
+      schema:
+        type: object
+        additionalProperties:
+          type: string
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Affected:
+      type: object
+      properties:
+        affected:
+          type: integer
+          example: 1
+
+    RowObject:
+      type: object
+      additionalProperties: true
+      example:
+        id: "1"
+        name: alpha
+
+    RowArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/RowObject"
+
+    Protocol:
+      type: string
+      enum:
+        - http
+        - postgres
+        - mysql
+        - file
+        - mongo
+        - s3
+        - firebase
+        - notion
+        - redis
+
+    FunctionOperation:
+      type: string
+      enum: [select, insert, update, upsert, delete, invoke]
+
+    Credential:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateCredentialRequest:
+      type: object
+      required: [name, data]
+      properties:
+        name:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+          description: Plaintext secrets; stored encrypted (never returned by API)
+
+    Server:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        protocol:
+          $ref: "#/components/schemas/Protocol"
+        options:
+          type: object
+          additionalProperties: true
+          description: Protocol-specific JSON (see project docs)
+        credentialRef:
+          type: string
+          format: uuid
+          nullable: true
+        enabled:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateServerRequest:
+      type: object
+      required: [name, protocol]
+      properties:
+        name:
+          type: string
+        protocol:
+          $ref: "#/components/schemas/Protocol"
+        options:
+          type: object
+          additionalProperties: true
+        credentialRef:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+
+    UpdateServerRequest:
+      type: object
+      properties:
+        options:
+          type: object
+          additionalProperties: true
+        credentialRef:
+          type: string
+          format: uuid
+          nullable: true
+        enabled:
+          type: boolean
+
+    Table:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serverId:
+          type: string
+          format: uuid
+        schemaName:
+          type: string
+        tableName:
+          type: string
+        remoteName:
+          type: string
+        keyColumns:
+          type: array
+          items:
+            type: string
+        options:
+          type: object
+          additionalProperties: true
+        serverName:
+          type: string
+
+    Column:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tableId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dataType:
+          type: string
+        remoteName:
+          type: string
+        nullable:
+          type: boolean
+        position:
+          type: integer
+
+    ColumnInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        dataType:
+          type: string
+          default: text
+        remoteName:
+          type: string
+        nullable:
+          type: boolean
+        position:
+          type: integer
+
+    CreateTableRequest:
+      type: object
+      required: [serverName, tableName, columns]
+      properties:
+        serverName:
+          type: string
+        schemaName:
+          type: string
+          default: public
+        tableName:
+          type: string
+        remoteName:
+          type: string
+        keyColumns:
+          type: array
+          items:
+            type: string
+        options:
+          type: object
+          additionalProperties: true
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnInput"
+
+    CreateTableResponse:
+      type: object
+      properties:
+        table:
+          $ref: "#/components/schemas/Table"
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/Column"
+
+    Function:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serverId:
+          type: string
+          format: uuid
+        schemaName:
+          type: string
+        name:
+          type: string
+        operation:
+          $ref: "#/components/schemas/FunctionOperation"
+        remotePath:
+          type: string
+        method:
+          type: string
+        options:
+          type: object
+          additionalProperties: true
+        serverName:
+          type: string
+
+    CreateFunctionRequest:
+      type: object
+      required: [serverName, name, operation]
+      properties:
+        serverName:
+          type: string
+        schemaName:
+          type: string
+          default: public
+        name:
+          type: string
+        operation:
+          $ref: "#/components/schemas/FunctionOperation"
+        remotePath:
+          type: string
+        method:
+          type: string
+        options:
+          type: object
+          additionalProperties: true

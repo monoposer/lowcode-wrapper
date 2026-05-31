@@ -29,6 +29,7 @@ docker compose up -d postgres   # 仅 Meta PG，5433 → wrapper_meta
 make migrate                    # 仅 postgres 服务时，首次或 schema 变更后
 make run                        # 或 make build && ./bin/server
 # Playground: http://localhost:3020/playground/
+# Swagger:  http://localhost:3020/swagger/
 
 # 最小镜像：make docker-build
 # Dockerfile 多阶段：golang:alpine 编译 → distroless/static-debian12:nonroot
@@ -43,6 +44,7 @@ export DATABASE_URL='postgresql://wrapper:wrapper@localhost:5433/wrapper_meta?ss
 export WRAPPER_MASTER_KEY="$(openssl rand -base64 32)"
 make migrate
 go test ./internal/integration/... -v
+go test ./internal/integration/... -v -run TestHTTP   # http 驱动（httptest 模拟上游 PostgREST API）
 ```
 
 ## 请求流

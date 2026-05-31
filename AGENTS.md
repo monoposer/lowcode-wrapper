@@ -10,7 +10,8 @@ PostgREST 风格 FDW Sidecar：元数据存 PG，凭据 AES 加密，对外 `/v1
 4. 非 compose 时：`make migrate` 再 `make run`
 5. `make run` 或 compose 的 `wrapper` → http://localhost:3020
 6. 测试 UI：`http://localhost:3020/playground/`
-7. 健康检查：`GET /health`
+7. API 文档：`http://localhost:3020/swagger/`（OpenAPI 3，`internal/api/openapi/openapi.yaml`）
+8. 健康检查：`GET /health`
 
 ## 目录
 

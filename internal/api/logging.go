@@ -67,5 +67,7 @@ func Logging(next http.Handler) http.Handler {
 }
 
 func skipRequestLog(path string) bool {
-	return strings.HasPrefix(path, "/playground/")
+	return strings.HasPrefix(path, "/playground/") ||
+		strings.HasPrefix(path, "/openapi/") ||
+		path == "/swagger/" || path == "/swagger" || path == "/docs"
 }
