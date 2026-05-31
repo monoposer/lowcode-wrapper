@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- build server (static binary, no CGO) ---
-FROM golang:1.21-alpine AS build
+FROM golang:1.24-alpine AS build
 RUN apk add --no-cache ca-certificates
 WORKDIR /src
 COPY go.mod go.sum ./

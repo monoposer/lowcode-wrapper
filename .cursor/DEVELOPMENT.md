@@ -141,12 +141,19 @@ curl -X POST "$BASE/v1/rpc/create_order" \
 | protocol | server.options | credential.data |
 |----------|----------------|-----------------|
 | `http` | `endpoint`, `basePath?`, `headers?`, `auth.type` + `auth.options` | username/password/token 等 |
-| http table.options | `headers?`（与 server 合并，table 同名 key 覆盖） | — |
-| http function.options | `headers?`（Invoke / RPC） | — |
+| `notion` | **委托 http**：默认 `https://api.notion.com/v1`，`Notion-Version` header | `token` / `integrationToken` → Bearer |
+| `firebase` | **委托 http**：`projectId` → Firestore REST base URL，或自定义 `endpoint` | `accessToken` / `token` → Bearer |
+| `mongo` | `uri`, `database` | `uri`, `database` |
+| `redis` | `addr` 或 `url`, `db?` | `password`, `addr?` |
+| `s3` | `bucket`, `region?` | `accessKeyId`, `secretAccessKey`, `sessionToken?` |
 | `postgres` | `dsn?`, `schema?` | `dsn` 或连接字段 |
 | `mysql` | `dsn?`, `database?` | `dsn` 或 username/password/host/database |
 | `file` | `rootPath` | 通常不需要 |
-| table.options | file: `format` = csv/json/ndjson | — |
+| table.options | file: `format`; redis: `keyPrefix`, `type`; s3: `prefix`, `format`; mongo: `collection` | — |
+
+纯 REST 的第三方也可直接用 `protocol: http` 自行配 `endpoint` / `auth`，不必单独协议。
+
+**迁移**：新协议需 `make migrate`（`002_protocols.up.sql`）。
 
 ## Migration
 

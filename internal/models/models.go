@@ -14,6 +14,11 @@ const (
 	ProtocolPostgres Protocol = "postgres"
 	ProtocolMySQL    Protocol = "mysql"
 	ProtocolFile     Protocol = "file"
+	ProtocolMongo    Protocol = "mongo"
+	ProtocolS3       Protocol = "s3"
+	ProtocolFirebase Protocol = "firebase"
+	ProtocolNotion   Protocol = "notion"
+	ProtocolRedis    Protocol = "redis"
 )
 
 type AuthType string
@@ -176,6 +181,57 @@ type FileServerOptions struct {
 
 type FileTableOptions struct {
 	Format string `json:"format"` // csv, json, ndjson
+}
+
+// NotionServerOptions — REST API; driver delegates to http with Notion defaults.
+type NotionServerOptions struct {
+	Endpoint      string            `json:"endpoint,omitempty"`
+	NotionVersion string            `json:"notionVersion,omitempty"`
+	Headers       map[string]string `json:"headers,omitempty"`
+}
+
+// FirebaseServerOptions — Firestore REST; delegates to http when endpoint is set or built from projectId.
+type FirebaseServerOptions struct {
+	ProjectID string `json:"projectId"`
+	Database  string `json:"database,omitempty"` // default (default)
+	Endpoint  string `json:"endpoint,omitempty"`
+}
+
+// MongoServerOptions — native MongoDB driver.
+type MongoServerOptions struct {
+	URI      string `json:"uri,omitempty"`
+	Database string `json:"database,omitempty"`
+}
+
+// MongoTableOptions — collection name defaults to table remote_name / table_name.
+type MongoTableOptions struct {
+	Collection string `json:"collection,omitempty"`
+}
+
+// RedisServerOptions — go-redis.
+type RedisServerOptions struct {
+	Addr     string `json:"addr,omitempty"`
+	URL      string `json:"url,omitempty"`
+	DB       int    `json:"db,omitempty"`
+	Username string `json:"username,omitempty"`
+}
+
+// RedisTableOptions — key layout for a logical table.
+type RedisTableOptions struct {
+	KeyPrefix string `json:"keyPrefix,omitempty"`
+	Type      string `json:"type,omitempty"` // hash (default), string, json
+}
+
+// S3ServerOptions — AWS S3; phase 1 SELECT only.
+type S3ServerOptions struct {
+	Region string `json:"region,omitempty"`
+	Bucket string `json:"bucket"`
+}
+
+// S3TableOptions — object prefix or single object key.
+type S3TableOptions struct {
+	Prefix string `json:"prefix,omitempty"`
+	Format string `json:"format,omitempty"` // json, csv, ndjson (single object)
 }
 
 func ParseServerOptions[T any](raw json.RawMessage) (T, error) {

@@ -10,7 +10,7 @@ alwaysApply: true
 - **凭据**：`WRAPPER_MASTER_KEY`（32-byte base64）+ AES-256-GCM；`credentialRef` 引用 UUID，spec 不落明文
 - **Admin API**：`/api/credentials`、`/api/servers`、`/api/tables`、`/api/functions`
 - **数据 API**：PostgREST 风格 `/v1/{schema}/{table}`、`POST /v1/rpc/{fn}`
-- **驱动**：`internal/driver` 注册表；新协议实现 `driver.Driver` 并在包 `init()` 中 `Register`
+- **驱动**：`internal/driver` 注册表；`http`/`postgres`/`mysql`/`file`/`mongo`/`redis`/`s3`；`notion`/`firebase` 委托 `httpdriver`（`internal/driver/httpwrap`）
 - HTTP auth：`internal/auth/httpauth.go`（NONE / BASIC / API_KEY / BEARER / CLIENT_CREDENTIALS / UNIVERSAL）
 - 列映射：本地 `wrapper_column.name` → 远程 `remote_name`；filter/body 经 `postgrest.MapRowToRemote` / `MapFilters`
 - 日志：stdlib `log/slog`，`LOG_LEVEL` / `LOG_FORMAT`（text|json）；HTTP 访问日志在 `internal/api/logging.go`

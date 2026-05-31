@@ -12,9 +12,14 @@ import (
 	store "lowcode-wrapper/internal/store/postgres"
 
 	_ "lowcode-wrapper/internal/driver/filedriver"
+	_ "lowcode-wrapper/internal/driver/firebasedriver"
 	_ "lowcode-wrapper/internal/driver/httpdriver"
+	_ "lowcode-wrapper/internal/driver/mongodriver"
 	_ "lowcode-wrapper/internal/driver/mysqldriver"
+	_ "lowcode-wrapper/internal/driver/notiondriver"
 	_ "lowcode-wrapper/internal/driver/pgdriver"
+	_ "lowcode-wrapper/internal/driver/redisdriver"
+	_ "lowcode-wrapper/internal/driver/s3driver"
 )
 
 func main() {

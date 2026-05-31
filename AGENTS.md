@@ -1,6 +1,6 @@
 # lowcode-wrapper — Cursor / Agent 开发说明
 
-PostgREST 风格 FDW Sidecar：元数据存 PG，凭据 AES 加密，对外 `/v1/{schema}/{table}` CRUD + `/v1/rpc/{fn}`，内部按 `http` / `postgres` / `mysql` / `file` 协议路由。
+PostgREST 风格 FDW Sidecar：元数据存 PG，凭据 AES 加密，对外 `/v1/{schema}/{table}` CRUD + `/v1/rpc/{fn}`，内部按协议路由（`http` / `postgres` / `mysql` / `file` / `mongo` / `redis` / `s3` / `notion` / `firebase`）。
 
 ## 本地启动
 

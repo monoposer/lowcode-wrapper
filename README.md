@@ -30,7 +30,7 @@ Migrations run once via the `migrate` service; the server image only contains `/
 ## Admin API
 
 - `POST /api/credentials` — store encrypted secrets
-- `POST /api/servers` — register foreign server (protocol: `http`|`postgres`|`mysql`|`file`)
+- `POST /api/servers` — register foreign server (`http`|`postgres`|`mysql`|`file`|`mongo`|`redis`|`s3`|`notion`|`firebase`)
 - `POST /api/tables` — register foreign table + columns
 - `POST /api/functions` — register RPC mapping
 
