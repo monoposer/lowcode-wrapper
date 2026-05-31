@@ -15,24 +15,9 @@ services:
       timeout: 3s
       retries: 10
 
-  migrate:
-    build:
-      context: .
-      target: migrate
-    image: lowcode-wrapper-migrate:local
-    command: ["up"]
-    environment:
-      DATABASE_URL: postgresql://wrapper:wrapper@postgres:5432/wrapper_meta?sslmode=disable
-      MIGRATIONS_DIR: /scripts/migrations
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
   wrapper:
     build:
       context: .
-      target: server
     image: lowcode-wrapper:local
     ports:
       - "${PORT:-3020}:3020"
@@ -43,8 +28,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_FORMAT: ${LOG_FORMAT:-json}
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

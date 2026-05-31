@@ -2,7 +2,7 @@ BINARY := bin/server
 MAIN   := ./cmd/server
 PORT   ?= 3020
 
-.PHONY: run start build clean check test migrate migrate-up migrate-down docker-build docker-build-migrate
+.PHONY: run start build clean check test migrate migrate-up migrate-down docker-build
 
 IMAGE ?= lowcode-wrapper:local
 
@@ -33,7 +33,4 @@ migrate-down:
 	@if [ -f .env ]; then set -a && . ./.env && set +a; fi; go run ./cmd/migrate down
 
 docker-build:
-	docker build --target server -t $(IMAGE) .
-
-docker-build-migrate:
-	docker build --target migrate -t $(IMAGE)-migrate .
+	docker build -t $(IMAGE) .

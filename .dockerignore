@@ -2,6 +2,8 @@
 .gitignore
 .cursor
 bin/
+.gocache/
+.gotmp/
 .env
 .env.*
 !.env.example
