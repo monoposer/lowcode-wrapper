@@ -36,12 +36,7 @@ func NewFromEnv(vault *auth.Vault) (*Store, error) {
 		pool.Close()
 		return nil, fmt.Errorf("ping: %w", err)
 	}
-	s := &Store{pool: pool, vault: vault}
-	if err := s.Migrate(context.Background()); err != nil {
-		pool.Close()
-		return nil, err
-	}
-	return s, nil
+	return &Store{pool: pool, vault: vault}, nil
 }
 
 func (s *Store) Close() {

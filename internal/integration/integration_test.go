@@ -14,6 +14,7 @@ import (
 
 	"lowcode-wrapper/internal/api"
 	"lowcode-wrapper/internal/auth"
+	"lowcode-wrapper/internal/migrate"
 	"lowcode-wrapper/internal/models"
 	"lowcode-wrapper/internal/service"
 	store "lowcode-wrapper/internal/store/postgres"
@@ -34,6 +35,10 @@ func TestFileDriverE2E(t *testing.T) {
 		key[i] = 1
 	}
 	os.Setenv("WRAPPER_MASTER_KEY", base64.StdEncoding.EncodeToString(key))
+
+	if err := migrate.Up(context.Background(), dsn); err != nil {
+		t.Fatal(err)
+	}
 
 	vault, err := auth.NewVaultFromEnv()
 	if err != nil {

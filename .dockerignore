@@ -1,0 +1,17 @@
+.git
+.gitignore
+.cursor
+bin/
+.env
+.env.*
+!.env.example
+docker-volumes/
+.docker-volumn/
+*.md
+AGENTS.md
+**/*_test.go
+coverage.*
+*.log
+.DS_Store
+.idea/
+.vscode/

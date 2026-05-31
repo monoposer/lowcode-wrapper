@@ -6,7 +6,7 @@ alwaysApply: true
 # lowcode-wrapper
 
 - Go 1.21+ HTTP 服务，`net/http` + JSON，**无 gRPC/protobuf**
-- **单 Meta DB**：`DATABASE_URL` 存 wrapper_* 元数据；启动时 `store.Migrate` 自动建表
+- **单 Meta DB**：`DATABASE_URL` 存 wrapper_* 元数据；`make migrate` 应用 `scripts/migrations/*.up.sql`
 - **凭据**：`WRAPPER_MASTER_KEY`（32-byte base64）+ AES-256-GCM；`credentialRef` 引用 UUID，spec 不落明文
 - **Admin API**：`/api/credentials`、`/api/servers`、`/api/tables`、`/api/functions`
 - **数据 API**：PostgREST 风格 `/v1/{schema}/{table}`、`POST /v1/rpc/{fn}`

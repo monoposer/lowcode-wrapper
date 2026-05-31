@@ -144,9 +144,20 @@ type CreateFunctionRequest struct {
 // ServerOptions helpers
 
 type HTTPServerOptions struct {
-	Endpoint string    `json:"endpoint"`
-	BasePath string    `json:"basePath,omitempty"`
-	Auth     *HTTPAuth `json:"auth,omitempty"`
+	Endpoint string            `json:"endpoint"`
+	BasePath string            `json:"basePath,omitempty"`
+	Auth     *HTTPAuth         `json:"auth,omitempty"`
+	Headers  map[string]string `json:"headers,omitempty"`
+}
+
+// HTTPTableOptions applies to wrapper_table.options when server protocol is http.
+type HTTPTableOptions struct {
+	Headers map[string]string `json:"headers,omitempty"`
+}
+
+// HTTPFunctionOptions applies to wrapper_function.options for http invoke.
+type HTTPFunctionOptions struct {
+	Headers map[string]string `json:"headers,omitempty"`
 }
 
 type PostgresServerOptions struct {

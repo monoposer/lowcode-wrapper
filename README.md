@@ -8,8 +8,24 @@ PostgREST-style FDW sidecar: register foreign servers/tables in PostgreSQL metad
 cp .env.example .env
 # Set WRAPPER_MASTER_KEY: openssl rand -base64 32
 docker compose up -d postgres
+make migrate
 make run
 ```
+
+Playground UI: http://localhost:3020/playground/
+
+## Docker
+
+```bash
+# Build minimal image (~15–20MB, distroless + static binary)
+make docker-build IMAGE=lowcode-wrapper:latest
+
+# Full stack (postgres + migrate + server)
+cp .env.example .env   # set WRAPPER_MASTER_KEY
+docker compose up -d --build
+```
+
+Migrations run once via the `migrate` service; the server image only contains `/server`.
 
 ## Admin API
 

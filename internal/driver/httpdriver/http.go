@@ -26,6 +26,7 @@ type Driver struct {
 	basePath   string
 	auth       *models.HTTPAuth
 	cred       map[string]any
+	headers    map[string]string
 	httpClient *http.Client
 }
 
@@ -49,6 +50,7 @@ func New(ctx context.Context, srv models.Server, cred map[string]any) (driver.Dr
 		basePath:   strings.TrimSpace(opts.BasePath),
 		auth:       authCfg,
 		cred:       cred,
+		headers:    opts.Headers,
 		httpClient: &http.Client{Timeout: 60 * time.Second},
 	}, nil
 }
@@ -106,6 +108,7 @@ func (d *Driver) Select(ctx context.Context, req driver.SelectRequest) ([]map[st
 	if err != nil {
 		return nil, err
 	}
+	d.setRequestHeaders(httpReq, tableHeaderOptions(req.Resolved.Table.Options))
 	httpReq.Header.Set("Accept", "application/json")
 	if err := d.applyAuth(ctx, httpReq); err != nil {
 		return nil, err
@@ -137,6 +140,7 @@ func (d *Driver) Insert(ctx context.Context, req driver.RowRequest) (map[string]
 	if err != nil {
 		return nil, err
 	}
+	d.setRequestHeaders(httpReq, tableHeaderOptions(req.Resolved.Table.Options))
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 	if req.PreferRepresentation {
@@ -182,6 +186,7 @@ func (d *Driver) Update(ctx context.Context, req driver.RowRequest) (int, error)
 	if err != nil {
 		return 0, err
 	}
+	d.setRequestHeaders(httpReq, tableHeaderOptions(req.Resolved.Table.Options))
 	httpReq.Header.Set("Content-Type", "application/json")
 	if err := d.applyAuth(ctx, httpReq); err != nil {
 		return 0, err
@@ -209,6 +214,7 @@ func (d *Driver) Upsert(ctx context.Context, req driver.RowRequest) (bool, map[s
 	if err != nil {
 		return false, nil, err
 	}
+	d.setRequestHeaders(httpReq, tableHeaderOptions(req.Resolved.Table.Options))
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 	prefer := "return=minimal,resolution=merge-duplicates"
@@ -260,6 +266,7 @@ func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, err
 	if err != nil {
 		return 0, err
 	}
+	d.setRequestHeaders(httpReq, tableHeaderOptions(req.Resolved.Table.Options))
 	if err := d.applyAuth(ctx, httpReq); err != nil {
 		return 0, err
 	}
@@ -315,6 +322,7 @@ func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, err
 	if err != nil {
 		return nil, err
 	}
+	d.setRequestHeaders(httpReq, functionHeaderOptions(req.Resolved.Function.Options))
 	if bodyReader != nil {
 		httpReq.Header.Set("Content-Type", "application/json")
 	}

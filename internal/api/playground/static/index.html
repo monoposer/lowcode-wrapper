@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>lowcode-wrapper Playground</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --accent-dim: #2563b8;
+      --ok: #3dd68c;
+      --err: #f87171;
+      --warn: #fbbf24;
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
+      font-size: 13px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header h1 span { color: var(--muted); font-weight: 400; }
+    .base-url {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .base-url label { color: var(--muted); white-space: nowrap; }
+    .base-url input {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .health-dot.ok { background: var(--ok); }
+    .health-dot.err { background: var(--err); }
+    main {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: calc(100vh - 53px);
+    }
+    @media (max-width: 800px) {
+      main { grid-template-columns: 1fr; }
+      nav { border-bottom: 1px solid var(--border); }
+    }
+    nav {
+      border-right: 1px solid var(--border);
+      padding: 12px 0;
+      background: var(--panel);
+    }
+    nav section {
+      padding: 0 12px 12px;
+    }
+    nav h2 {
+      margin: 0 0 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+    }
+    nav button:hover { background: rgba(61, 139, 253, 0.12); }
+    nav button.active {
+      background: rgba(61, 139, 253, 0.2);
+      color: var(--accent);
+    }
+    .workspace {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select, input[type="text"] {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font: inherit;
+    }
+    select { min-width: 90px; }
+    .path-input { flex: 1; min-width: 180px; }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+    }
+    button.primary:hover { background: var(--accent-dim); }
+    button.primary:disabled { opacity: 0.5; cursor: wait; }
+    button.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+    }
+    button.ghost:hover { color: var(--text); border-color: var(--muted); }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      resize: vertical;
+      font: inherit;
+      line-height: 1.5;
+    }
+    label.field {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      flex: 1;
+    }
+    @media (max-width: 1000px) {
+      .panels { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 200px;
+    }
+    .panel-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-body {
+      padding: 12px;
+      overflow: auto;
+      flex: 1;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .status {
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+    .status.warn { color: var(--warn); }
+    .resources {
+      font-size: 12px;
+      color: var(--muted);
+      max-height: 120px;
+      overflow: auto;
+    }
+    .resources a {
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      padding: 2px 0;
+    }
+    .resources a:hover { text-decoration: underline; }
+    .hint { color: var(--muted); font-size: 11px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>lowcode-wrapper <span>Playground</span></h1>
+    <div class="base-url">
+      <label for="baseUrl">Base URL</label>
+      <input id="baseUrl" type="text" placeholder="(same origin)" />
+    </div>
+    <div class="health-dot" id="healthDot" title="health"></div>
+    <button type="button" class="ghost" id="btnHealth">Check /health</button>
+  </header>
+  <main>
+    <nav id="presets"></nav>
+    <div class="workspace">
+      <div class="row">
+        <select id="method">
+          <option>GET</option>
+          <option>POST</option>
+          <option>PATCH</option>
+          <option>DELETE</option>
+        </select>
+        <input id="path" class="path-input" type="text" placeholder="/v1/public/items" />
+        <input id="query" type="text" placeholder="?id=eq.1&limit=10" style="min-width:160px" />
+        <button type="button" class="primary" id="btnSend">Send</button>
+      </div>
+      <div class="row">
+        <label class="field" style="margin:0">
+          <input type="checkbox" id="preferRep" /> Prefer: return=representation
+        </label>
+      </div>
+      <label class="field">Request body (JSON)</label>
+      <textarea id="body" spellcheck="false"></textarea>
+      <p class="hint" id="hint"></p>
+      <div class="panel" style="min-height:auto">
+        <div class="panel-head">Registered resources <button type="button" class="ghost" id="btnRefresh">Refresh</button></div>
+        <div class="panel-body resources" id="resources">Loading…</div>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">Response</div>
+          <pre class="panel-body" id="response">Send a request to see the response.</pre>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Meta</div>
+          <pre class="panel-body" id="meta">—</pre>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function base() {
+      const v = $("baseUrl").value.trim();
+      return v || window.location.origin;
+    }
+
+    function fullPath() {
+      let p = $("path").value.trim();
+      if (!p.startsWith("/")) p = "/" + p;
+      let q = $("query").value.trim();
+      if (q && !q.startsWith("?")) q = "?" + q;
+      return p + q;
+    }
+
+    function prettyJSON(text) {
+      try {
+        return JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        return text;
+      }
+    }
+
+    async function send() {
+      const method = $("method").value;
+      const url = base() + fullPath();
+      const headers = { Accept: "application/json" };
+      const bodyText = $("body").value.trim();
+      if (bodyText && method !== "GET" && method !== "DELETE") {
+        headers["Content-Type"] = "application/json";
+      }
+      if ($("preferRep").checked && (method === "POST" || method === "PATCH")) {
+        headers["Prefer"] = "return=representation";
+      }
+      $("btnSend").disabled = true;
+      $("response").textContent = "…";
+      $("meta").textContent = `→ ${method} ${url}\n`;
+      const t0 = performance.now();
+      try {
+        const init = { method, headers };
+        if (bodyText && method !== "GET" && method !== "DELETE") {
+          init.body = bodyText;
+        }
+        const res = await fetch(url, init);
+        const elapsed = Math.round(performance.now() - t0);
+        const ct = res.headers.get("content-type") || "";
+        let body = await res.text();
+        if (ct.includes("json") && body) body = prettyJSON(body);
+        const statusClass = res.ok ? "ok" : res.status >= 500 ? "err" : "warn";
+        $("meta").innerHTML =
+          `→ ${method} ${url}\n` +
+          `<span class="status ${statusClass}">${res.status} ${res.statusText}</span> · ${elapsed} ms\n` +
+          `content-type: ${ct || "(none)"}`;
+        $("response").textContent = body || "(empty body)";
+      } catch (e) {
+        $("meta").innerHTML = `<span class="status err">Network error</span>`;
+        $("response").textContent = String(e);
+      } finally {
+        $("btnSend").disabled = false;
+      }
+    }
+
+    async function checkHealth() {
+      const dot = $("healthDot");
+      try {
+        const res = await fetch(base() + "/health");
+        const data = await res.json();
+        dot.className = "health-dot " + (res.ok && data.status === "ok" ? "ok" : "err");
+      } catch {
+        dot.className = "health-dot err";
+      }
+    }
+
+    function loadRequest(preset) {
+      $("method").value = preset.method;
+      $("path").value = preset.path;
+      $("query").value = preset.query || "";
+      $("body").value = preset.body || "";
+      $("preferRep").checked = !!preset.prefer;
+      $("hint").textContent = preset.hint || "";
+    }
+
+    const presetGroups = [
+      {
+        title: "Admin",
+        items: [
+          { label: "List servers", method: "GET", path: "/api/servers" },
+          { label: "List tables", method: "GET", path: "/api/tables" },
+          { label: "List functions", method: "GET", path: "/api/functions" },
+          {
+            label: "Create credential",
+            method: "POST",
+            path: "/api/credentials",
+            body: '{\n  "name": "demo",\n  "data": { "username": "u", "password": "p" }\n}',
+            hint: "Returns id only; secrets are not echoed back.",
+          },
+          {
+            label: "Create file server",
+            method: "POST",
+            path: "/api/servers",
+            body: '{\n  "name": "local_files",\n  "protocol": "file",\n  "options": { "rootPath": "/tmp" }\n}',
+            hint: "Set rootPath to a directory with csv/json files.",
+          },
+          {
+            label: "Register table (file)",
+            method: "POST",
+            path: "/api/tables",
+            body: '{\n  "serverName": "local_files",\n  "schemaName": "public",\n  "tableName": "items",\n  "remoteName": "items.csv",\n  "keyColumns": ["id"],\n  "options": { "format": "csv" },\n  "columns": [\n    { "name": "id", "dataType": "text" },\n    { "name": "name", "dataType": "text" }\n  ]\n}',
+          },
+          {
+            label: "Create HTTP server",
+            method: "POST",
+            path: "/api/servers",
+            body: '{\n  "name": "partner_api",\n  "protocol": "http",\n  "credentialRef": "<credential-uuid>",\n  "options": {\n    "endpoint": "https://api.example.com",\n    "headers": { "X-Tenant-Id": "acme", "Accept-Language": "zh-CN" },\n    "auth": { "type": "BASIC" }\n  }\n}',
+          },
+        ],
+      },
+      {
+        title: "Data API",
+        items: [
+          {
+            label: "SELECT rows",
+            method: "GET",
+            path: "/v1/public/items",
+            query: "limit=10",
+            hint: "PostgREST filters: col=eq.val, select=a,b, order=id.desc",
+          },
+          {
+            label: "SELECT filtered",
+            method: "GET",
+            path: "/v1/public/items",
+            query: "id=eq.1&select=id,name",
+          },
+          {
+            label: "INSERT",
+            method: "POST",
+            path: "/v1/public/items",
+            body: '{\n  "id": "3",\n  "name": "gamma"\n}',
+            prefer: true,
+          },
+          {
+            label: "UPDATE",
+            method: "PATCH",
+            path: "/v1/public/items",
+            query: "id=eq.3",
+            body: '{\n  "name": "updated"\n}',
+          },
+          {
+            label: "DELETE",
+            method: "DELETE",
+            path: "/v1/public/items",
+            query: "id=eq.3",
+          },
+          {
+            label: "RPC",
+            method: "POST",
+            path: "/v1/rpc/create_order",
+            body: '{\n  "sku": "ABC",\n  "qty": 1\n}',
+          },
+        ],
+      },
+    ];
+
+    function buildNav() {
+      const nav = $("presets");
+      nav.innerHTML = "";
+      presetGroups.forEach((group) => {
+        const sec = document.createElement("section");
+        const h2 = document.createElement("h2");
+        h2.textContent = group.title;
+        sec.appendChild(h2);
+        group.items.forEach((item, i) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = item.label;
+          btn.dataset.group = group.title;
+          btn.dataset.index = String(i);
+          btn.addEventListener("click", () => {
+            nav.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            loadRequest(item);
+          });
+          sec.appendChild(btn);
+        });
+        nav.appendChild(sec);
+      });
+    }
+
+    async function refreshResources() {
+      const el = $("resources");
+      const b = base();
+      try {
+        const [servers, tables, functions] = await Promise.all([
+          fetch(b + "/api/servers").then((r) => r.json()),
+          fetch(b + "/api/tables").then((r) => r.json()),
+          fetch(b + "/api/functions").then((r) => r.json()),
+        ]);
+        const lines = [];
+        (servers || []).forEach((s) => {
+          lines.push(`<strong>server</strong> ${s.name} <span style="color:var(--muted)">(${s.protocol})</span>`);
+        });
+        (tables || []).forEach((t) => {
+          const path = `/v1/${t.schemaName}/${t.tableName}`;
+          lines.push(
+            `<a data-path="${path}" data-query="limit=10">table ${t.schemaName}.${t.tableName}</a> → ${t.serverName || ""}`
+          );
+        });
+        (functions || []).forEach((f) => {
+          lines.push(
+            `<a data-path="/v1/rpc/${f.name}" data-method="POST">rpc ${f.schemaName}.${f.name}</a>`
+          );
+        });
+        el.innerHTML = lines.length ? lines.join("<br>") : "(none — register via Admin presets)";
+        el.querySelectorAll("a[data-path]").forEach((a) => {
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            $("method").value = a.dataset.method || "GET";
+            $("path").value = a.dataset.path;
+            $("query").value = a.dataset.query || "";
+            $("body").value = "";
+          });
+        });
+      } catch (e) {
+        el.textContent = "Failed to load: " + e;
+      }
+    }
+
+    $("btnSend").addEventListener("click", send);
+    $("btnHealth").addEventListener("click", () => { checkHealth(); loadRequest({ method: "GET", path: "/health" }); send(); });
+    $("btnRefresh").addEventListener("click", refreshResources);
+    $("baseUrl").addEventListener("change", () => { checkHealth(); refreshResources(); });
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    buildNav();
+    $("baseUrl").value = localStorage.getItem("lw_base") || "";
+    $("baseUrl").addEventListener("input", () => localStorage.setItem("lw_base", $("baseUrl").value));
+    loadRequest(presetGroups[1].items[0]);
+    checkHealth();
+    refreshResources();
+  </script>
+</body>
+</html>

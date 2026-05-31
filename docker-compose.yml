@@ -9,6 +9,41 @@ services:
       - "5433:5432"
     volumes:
       - wrapper-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wrapper -d wrapper_meta"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: lowcode-wrapper-migrate:local
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgresql://wrapper:wrapper@postgres:5432/wrapper_meta?sslmode=disable
+      MIGRATIONS_DIR: /scripts/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  wrapper:
+    build:
+      context: .
+      target: server
+    image: lowcode-wrapper:local
+    ports:
+      - "${PORT:-3020}:3020"
+    environment:
+      DATABASE_URL: postgresql://wrapper:wrapper@postgres:5432/wrapper_meta?sslmode=disable
+      WRAPPER_MASTER_KEY: ${WRAPPER_MASTER_KEY:?set WRAPPER_MASTER_KEY in .env}
+      PORT: "3020"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   wrapper-pg-data:

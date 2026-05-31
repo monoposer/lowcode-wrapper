@@ -18,8 +18,15 @@ PORT=3020
 ## 启动与调试
 
 ```bash
-docker compose up -d postgres   # 5433 → wrapper_meta
+docker compose up -d postgres   # 仅 Meta PG，5433 → wrapper_meta
+# 或整栈（含 migrate + wrapper 镜像）：
+# docker compose up -d --build
+make migrate                    # 仅 postgres 服务时，首次或 schema 变更后
 make run                        # 或 make build && ./bin/server
+# Playground: http://localhost:3020/playground/
+
+# 最小镜像：make docker-build
+# Dockerfile 多阶段：golang:alpine 编译 → distroless/static-debian12:nonroot
 make test
 make check                      # 仅编译检查
 ```
@@ -29,6 +36,7 @@ make check                      # 仅编译检查
 ```bash
 export DATABASE_URL='postgresql://wrapper:wrapper@localhost:5433/wrapper_meta?sslmode=disable'
 export WRAPPER_MASTER_KEY="$(openssl rand -base64 32)"
+make migrate
 go test ./internal/integration/... -v
 ```
 
@@ -127,7 +135,9 @@ curl -X POST "$BASE/v1/rpc/create_order" \
 
 | protocol | server.options | credential.data |
 |----------|----------------|-----------------|
-| `http` | `endpoint`, `basePath?`, `auth.type` + `auth.options` | username/password/token 等 |
+| `http` | `endpoint`, `basePath?`, `headers?`, `auth.type` + `auth.options` | username/password/token 等 |
+| http table.options | `headers?`（与 server 合并，table 同名 key 覆盖） | — |
+| http function.options | `headers?`（Invoke / RPC） | — |
 | `postgres` | `dsn?`, `schema?` | `dsn` 或连接字段 |
 | `mysql` | `dsn?`, `database?` | `dsn` 或 username/password/host/database |
 | `file` | `rootPath` | 通常不需要 |
@@ -135,9 +145,10 @@ curl -X POST "$BASE/v1/rpc/create_order" \
 
 ## Migration
 
-- 参考 SQL：[`scripts/migrations/001_init.up.sql`](../scripts/migrations/001_init.up.sql)
-- 运行时：[`internal/store/postgres/migrate.go`](../internal/store/postgres/migrate.go) 内联执行（`go:embed` 不可用 `..` 路径，故与 scripts 保持同步）
-- 改 schema 时**两处一起改**
+- SQL 唯一来源：[`scripts/migrations/`](../scripts/migrations/)（`NNN_*.up.sql` / `NNN_*.down.sql`）
+- 应用：`make migrate` 或 `go run ./cmd/migrate up`（需 `DATABASE_URL`）
+- 回滚：`make migrate-down` 或 `go run ./cmd/migrate down`
+- 服务启动**不会**自动 migrate
 
 ## 常见陷阱
 

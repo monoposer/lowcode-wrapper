@@ -29,6 +29,7 @@ func main() {
 
 	engine := service.NewEngine(s)
 	mux := http.NewServeMux()
+	api.RegisterPlayground(mux)
 	api.NewAdminHandler(s).Register(mux)
 	api.NewPostgRESTHandler(engine).Register(mux)
 
@@ -36,7 +37,7 @@ func main() {
 	if port == "" {
 		port = "3020"
 	}
-	log.Printf("lowcode-wrapper listening on http://localhost:%s", port)
+	log.Printf("lowcode-wrapper listening on http://localhost:%s (playground: /playground/)", port)
 	if err := http.ListenAndServe(":"+port, api.CORS(mux)); err != nil {
 		log.Fatal(err)
 	}
