@@ -40,6 +40,8 @@ services:
       DATABASE_URL: postgresql://wrapper:wrapper@postgres:5432/wrapper_meta?sslmode=disable
       WRAPPER_MASTER_KEY: ${WRAPPER_MASTER_KEY:?set WRAPPER_MASTER_KEY in .env}
       PORT: "3020"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -9,6 +9,7 @@ docker-volumes/
 .docker-volumn/
 *.md
 AGENTS.md
+!LICENSE
 **/*_test.go
 coverage.*
 *.log

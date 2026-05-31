@@ -45,7 +45,7 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		rows, err := h.Engine.Select(r.Context(), schema, table, q)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		if rows == nil {
@@ -55,12 +55,12 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var row map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&row); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		ret, err := h.Engine.Insert(r.Context(), schema, table, row, prefer)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		if prefer.Representation && ret != nil {
@@ -71,19 +71,19 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPatch:
 		var row map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&row); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		n, err := h.Engine.Update(r.Context(), schema, table, q, row)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"affected": n})
 	case http.MethodDelete:
 		n, err := h.Engine.Delete(r.Context(), schema, table, q)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"affected": n})
@@ -104,7 +104,7 @@ func (h *PostgRESTHandler) handleRPC(w http.ResponseWriter, r *http.Request, nam
 	var body map[string]any
 	if r.Body != nil && r.ContentLength != 0 {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 	}
@@ -117,7 +117,7 @@ func (h *PostgRESTHandler) handleRPC(w http.ResponseWriter, r *http.Request, nam
 	}
 	result, err := h.Engine.InvokeRPC(r.Context(), schema, name, body, query)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, result)

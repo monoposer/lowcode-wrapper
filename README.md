@@ -46,3 +46,7 @@ Migrations run once via the `migrate` service; the server image only contains `/
 
 - [AGENTS.md](AGENTS.md) — Cursor / Agent 开发说明
 - [.cursor/DEVELOPMENT.md](.cursor/DEVELOPMENT.md) — 本地调试、API 示例、协议配置
+
+## License
+
+[MIT](LICENSE)

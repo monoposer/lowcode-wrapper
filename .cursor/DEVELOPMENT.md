@@ -11,6 +11,11 @@ DATABASE_URL=postgresql://wrapper:wrapper@localhost:5433/wrapper_meta?sslmode=di
 WRAPPER_MASTER_KEY=
 
 PORT=3020
+
+# slog: debug | info | warn | error
+LOG_LEVEL=info
+# text（本地）| json（Docker/生产）
+LOG_FORMAT=text
 ```
 
 复制：`cp .env.example .env` 并填入 `WRAPPER_MASTER_KEY`。

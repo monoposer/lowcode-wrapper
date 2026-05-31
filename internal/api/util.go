@@ -3,8 +3,10 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
+	"lowcode-wrapper/internal/logx"
 	store "lowcode-wrapper/internal/store/postgres"
 )
 
@@ -14,12 +16,24 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-func writeError(w http.ResponseWriter, err error) {
+func writeError(w http.ResponseWriter, r *http.Request, err error) {
+	level := slog.LevelWarn
+	status := http.StatusBadRequest
 	if errors.Is(err, store.ErrNotFound) {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		level = slog.LevelInfo
+		status = http.StatusNotFound
+	}
+	logx.Component("api").Log(r.Context(), level, "handler error",
+		"method", r.Method,
+		"path", r.URL.Path,
+		"status", status,
+		"err", err.Error(),
+	)
+	if status == http.StatusNotFound {
+		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+	writeJSON(w, status, map[string]string{"error": err.Error()})
 }
 
 func decodeJSON(r *http.Request, dst any) error {

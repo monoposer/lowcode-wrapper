@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"lowcode-wrapper/internal/driver"
+	"lowcode-wrapper/internal/logx"
 	"lowcode-wrapper/internal/models"
 	"lowcode-wrapper/internal/postgrest"
 	store "lowcode-wrapper/internal/store/postgres"
@@ -21,9 +23,25 @@ func NewEngine(s *store.Store) *Engine {
 func (e *Engine) DriverFor(ctx context.Context, srv models.Server) (driver.Driver, error) {
 	cred, err := e.Store.ServerCredential(ctx, &srv)
 	if err != nil {
+		logx.Component("engine").Error("load credential", "server", srv.Name, "err", err)
 		return nil, err
 	}
-	return driver.New(ctx, srv, cred)
+	drv, err := driver.New(ctx, srv, cred)
+	if err != nil {
+		logx.Component("engine").Error("driver init", "server", srv.Name, "protocol", srv.Protocol, "err", err)
+		return nil, err
+	}
+	return drv, nil
+}
+
+func (e *Engine) logOp(ctx context.Context, op, schema, table string, resolved *models.ResolvedTable) {
+	logx.Component("engine").Log(ctx, slog.LevelDebug, "data op",
+		"op", op,
+		"schema", schema,
+		"table", table,
+		"server", resolved.Server.Name,
+		"protocol", resolved.Server.Protocol,
+	)
 }
 
 func (e *Engine) Select(ctx context.Context, schema, table string, q postgrest.Query) ([]map[string]any, error) {
@@ -35,6 +53,7 @@ func (e *Engine) Select(ctx context.Context, schema, table string, q postgrest.Q
 	if err != nil {
 		return nil, err
 	}
+	e.logOp(ctx, "select", schema, table, resolved)
 	return drv.Select(ctx, driver.SelectRequest{
 		Resolved: resolved,
 		Select:   q.Select,
@@ -54,6 +73,7 @@ func (e *Engine) Insert(ctx context.Context, schema, table string, row map[strin
 	if err != nil {
 		return nil, err
 	}
+	e.logOp(ctx, "insert", schema, table, resolved)
 	req := driver.RowRequest{
 		Resolved:             resolved,
 		Row:                  row,
@@ -80,6 +100,7 @@ func (e *Engine) Update(ctx context.Context, schema, table string, q postgrest.Q
 	if err != nil {
 		return 0, err
 	}
+	e.logOp(ctx, "update", schema, table, resolved)
 	return drv.Update(ctx, driver.RowRequest{
 		Resolved: resolved,
 		Row:      row,
@@ -96,6 +117,7 @@ func (e *Engine) Delete(ctx context.Context, schema, table string, q postgrest.Q
 	if err != nil {
 		return 0, err
 	}
+	e.logOp(ctx, "delete", schema, table, resolved)
 	return drv.Delete(ctx, driver.DeleteRequest{
 		Resolved: resolved,
 		Filters:  q.Filters,
@@ -112,6 +134,13 @@ func (e *Engine) InvokeRPC(ctx context.Context, schema, name string, body map[st
 		return nil, err
 	}
 
+	logx.Component("engine").Debug("rpc",
+		"schema", schema,
+		"name", name,
+		"operation", resolved.Function.Operation,
+		"server", resolved.Server.Name,
+		"protocol", resolved.Server.Protocol,
+	)
 	switch resolved.Function.Operation {
 	case "invoke":
 		return drv.Invoke(ctx, driver.InvokeRequest{

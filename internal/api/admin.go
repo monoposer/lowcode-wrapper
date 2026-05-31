@@ -44,12 +44,12 @@ func (h *AdminHandler) credentials(w http.ResponseWriter, r *http.Request) {
 	}
 	var req models.CreateCredentialRequest
 	if err := decodeJSON(r, &req); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	c, err := h.Store.CreateCredential(r.Context(), req.Name, req.Data)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, c)
@@ -63,11 +63,11 @@ func (h *AdminHandler) deleteCredential(w http.ResponseWriter, r *http.Request) 
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/credentials/")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	if err := h.Store.DeleteCredential(r.Context(), id); err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -78,7 +78,7 @@ func (h *AdminHandler) servers(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		list, err := h.Store.ListServers(r.Context())
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		if list == nil {
@@ -88,12 +88,12 @@ func (h *AdminHandler) servers(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var req models.CreateServerRequest
 		if err := decodeJSON(r, &req); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		srv, err := h.Store.CreateServer(r.Context(), req)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusCreated, srv)
@@ -106,25 +106,25 @@ func (h *AdminHandler) serverByID(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/servers/")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	switch r.Method {
 	case http.MethodPatch:
 		var req models.UpdateServerRequest
 		if err := decodeJSON(r, &req); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		srv, err := h.Store.UpdateServer(r.Context(), id, req)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, srv)
 	case http.MethodDelete:
 		if err := h.Store.DeleteServer(r.Context(), id); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -138,7 +138,7 @@ func (h *AdminHandler) tables(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		list, err := h.Store.ListTables(r.Context())
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		if list == nil {
@@ -148,12 +148,12 @@ func (h *AdminHandler) tables(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var req models.CreateTableRequest
 		if err := decodeJSON(r, &req); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		tbl, cols, err := h.Store.CreateTable(r.Context(), req)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusCreated, map[string]any{"table": tbl, "columns": cols})
@@ -175,7 +175,7 @@ func (h *AdminHandler) tableColumns(w http.ResponseWriter, r *http.Request) {
 	}
 	cols, err := h.Store.ListColumns(r.Context(), parts[0], parts[1])
 	if err != nil {
-		writeError(w, err)
+		writeError(w, r, err)
 		return
 	}
 	if cols == nil {
@@ -189,7 +189,7 @@ func (h *AdminHandler) functions(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		list, err := h.Store.ListFunctions(r.Context())
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		if list == nil {
@@ -199,12 +199,12 @@ func (h *AdminHandler) functions(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var req models.CreateFunctionRequest
 		if err := decodeJSON(r, &req); err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		fn, err := h.Store.CreateFunction(r.Context(), req)
 		if err != nil {
-			writeError(w, err)
+			writeError(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusCreated, fn)

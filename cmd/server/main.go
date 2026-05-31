@@ -1,12 +1,13 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"lowcode-wrapper/internal/api"
 	"lowcode-wrapper/internal/auth"
+	"lowcode-wrapper/internal/logx"
 	"lowcode-wrapper/internal/service"
 	store "lowcode-wrapper/internal/store/postgres"
 
@@ -17,15 +18,20 @@ import (
 )
 
 func main() {
+	logx.Init()
+
 	vault, err := auth.NewVaultFromEnv()
 	if err != nil {
-		log.Fatalf("vault: %v", err)
+		slog.Error("vault init failed", "err", err)
+		os.Exit(1)
 	}
 	s, err := store.NewFromEnv(vault)
 	if err != nil {
-		log.Fatalf("store: %v", err)
+		slog.Error("meta store init failed", "err", err)
+		os.Exit(1)
 	}
 	defer s.Close()
+	logx.Component("server").Info("meta store ready")
 
 	engine := service.NewEngine(s)
 	mux := http.NewServeMux()
@@ -37,8 +43,13 @@ func main() {
 	if port == "" {
 		port = "3020"
 	}
-	log.Printf("lowcode-wrapper listening on http://localhost:%s (playground: /playground/)", port)
-	if err := http.ListenAndServe(":"+port, api.CORS(mux)); err != nil {
-		log.Fatal(err)
+	handler := api.CORS(api.Logging(mux))
+	logx.Component("server").Info("listening",
+		"addr", "http://localhost:"+port,
+		"playground", "/playground/",
+	)
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		slog.Error("server stopped", "err", err)
+		os.Exit(1)
 	}
 }
