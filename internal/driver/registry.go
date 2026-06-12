@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 var (

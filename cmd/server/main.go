@@ -5,23 +5,24 @@ import (
 	"net/http"
 	"os"
 
-	"lowcode-wrapper/internal/api"
-	"lowcode-wrapper/internal/auth"
-	"lowcode-wrapper/internal/logx"
-	"lowcode-wrapper/internal/service"
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/api"
+	"github.com/monoposer/dataspan/internal/auth"
+	"github.com/monoposer/dataspan/internal/logx"
+	"github.com/monoposer/dataspan/internal/service"
+	"github.com/monoposer/dataspan/internal/store"
+	"github.com/monoposer/dataspan/internal/version"
 
-	_ "lowcode-wrapper/internal/driver/airtable"
-	_ "lowcode-wrapper/internal/driver/file"
-	_ "lowcode-wrapper/internal/driver/firebase"
-	_ "lowcode-wrapper/internal/driver/http"
-	_ "lowcode-wrapper/internal/driver/mongo"
-	_ "lowcode-wrapper/internal/driver/mysql"
-	_ "lowcode-wrapper/internal/driver/notion"
-	_ "lowcode-wrapper/internal/driver/postgres"
-	_ "lowcode-wrapper/internal/driver/redis"
-	_ "lowcode-wrapper/internal/driver/s3"
-	_ "lowcode-wrapper/internal/driver/sheets"
+	_ "github.com/monoposer/dataspan/internal/driver/airtable"
+	_ "github.com/monoposer/dataspan/internal/driver/file"
+	_ "github.com/monoposer/dataspan/internal/driver/firebase"
+	_ "github.com/monoposer/dataspan/internal/driver/http"
+	_ "github.com/monoposer/dataspan/internal/driver/mongo"
+	_ "github.com/monoposer/dataspan/internal/driver/mysql"
+	_ "github.com/monoposer/dataspan/internal/driver/notion"
+	_ "github.com/monoposer/dataspan/internal/driver/postgres"
+	_ "github.com/monoposer/dataspan/internal/driver/redis"
+	_ "github.com/monoposer/dataspan/internal/driver/s3"
+	_ "github.com/monoposer/dataspan/internal/driver/sheets"
 )
 
 func main() {
@@ -53,6 +54,7 @@ func main() {
 	}
 	handler := api.CORS(api.Logging(mux))
 	logx.Component("server").Info("listening",
+		"version", version.Version,
 		"addr", "http://localhost:"+port,
 		"playground", "/playground/",
 		"swagger", "/swagger/",

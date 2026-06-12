@@ -1,22 +1,22 @@
-# Meta Store
+# Meta store
 
-`WRAPPER_STORE_MODE` 决定 **Foreign Server / Table 元数据从哪读**。Meta DB 连接只在 `.env`（`DATABASE_*`），不在 YAML 里配库。
+`WRAPPER_STORE_MODE` controls **where Foreign Server / Table metadata is read from**. Meta DB connection settings live only in `.env` (`DATABASE_*`), not in YAML.
 
-| 模式 | 元数据来源 | 配置方式 |
-|------|------------|----------|
-| `postgres`（默认） | PostgreSQL | Admin API + `make migrate` |
-| `file` | `drivers.yaml` | 声明式 YAML（凭据 inline 在 `servers`） |
+| Mode | Metadata source | Configuration |
+|------|-----------------|---------------|
+| `postgres` (default) | PostgreSQL | Admin API + `make migrate` |
+| `file` | `drivers.yaml` | Declarative YAML (credentials inline on `servers`) |
 
 ```bash
 WRAPPER_STORE_MODE=postgres|file
-WRAPPER_DRIVERS_FILE=./drivers.yaml   # file 模式，默认 ./drivers.yaml
+WRAPPER_DRIVERS_FILE=./drivers.yaml   # file mode, default ./drivers.yaml
 ```
 
-Postgres 模式：`.env` 中 `DATABASE_HOST` / `DATABASE_PASSWORD` 等，或 `DATABASE_URL`。
+Postgres mode: `DATABASE_HOST` / `DATABASE_PASSWORD` in `.env`, or `DATABASE_URL`.
 
-## drivers.yaml（file 模式）
+## drivers.yaml (file mode)
 
-磁盘形态与 postgres **拆表不同**；`compileDeclarative` 后内存与 postgres store **相同**（`Server` + `CredentialRef` + 加密 payload）。
+On disk the shape differs from postgres tables; after `compileDeclarative` the in-memory model matches the postgres store (`Server` + `CredentialRef` + encrypted payload).
 
 ```yaml
 servers:
@@ -33,19 +33,19 @@ tables:
     columns: [...]
 ```
 
-| 持久化 | 磁盘 | 内存 |
-|--------|------|------|
+| Persistence | On disk | In memory |
+|-------------|---------|-----------|
 | postgres | `wrapper_credential` + `wrapper_server` + … | `models.Server` + `CredentialRef` |
-| file | `servers` + `tables` + `functions` | 同上 |
+| file | `servers` + `tables` + `functions` | same as postgres |
 
-多 server 共享凭据时，才用顶层 `credentials` + `credential: 名称`（见 [`drivers.yaml.example`](../drivers.yaml.example)）。
+Use top-level `credentials` + `credential: name` only when multiple servers share one secret (see [`drivers.yaml.example`](../drivers.yaml.example)).
 
-## 安全
+## Security
 
-| 内容 | 放哪 |
-|------|------|
-| Meta DB 密码 | `.env` `DATABASE_*` |
-| Foreign 凭据 | `servers[].credential` 或 Admin API；优先 `${ENV_VAR}` |
-| `WRAPPER_MASTER_KEY` | 仅 `.env` |
+| Secret | Location |
+|--------|----------|
+| Meta DB password | `.env` `DATABASE_*` |
+| Foreign credentials | `servers[].credential` or Admin API; prefer `${ENV_VAR}` |
+| `WRAPPER_MASTER_KEY` | `.env` only |
 
-实现：`internal/store/postgres/`、`internal/store/file/`。
+Implementation: `internal/store/postgres/`, `internal/store/file/`.

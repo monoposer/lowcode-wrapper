@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"lowcode-wrapper/internal/auth"
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/auth"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 type Store interface {

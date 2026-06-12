@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"lowcode-wrapper/internal/driver"
-	httpdriver "lowcode-wrapper/internal/driver/http"
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/driver"
+	httpdriver "github.com/monoposer/dataspan/internal/driver/http"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 // NewHTTPDriver merges defaults into server.options then uses the http driver.

@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 func TestParseQueryFilters(t *testing.T) {

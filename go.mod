@@ -1,4 +1,4 @@
-module lowcode-wrapper
+module github.com/monoposer/dataspan
 
 go 1.25
 

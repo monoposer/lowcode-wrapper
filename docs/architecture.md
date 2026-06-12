@@ -1,8 +1,8 @@
-# 架构
+# Architecture
 
-PostgREST 风格 **sidecar**（非 PG FDW 扩展）：元数据 + 凭据加密 + 统一 `/v1/...` 数据面。
+PostgREST-style **sidecar** (not a PostgreSQL FDW extension): metadata store, encrypted credentials, and a unified `/v1/...` data plane.
 
-## 请求流
+## Request flow
 
 ```
 Client → /v1/{schema}/{table} | /v1/rpc/{fn}
@@ -13,26 +13,26 @@ Client → /v1/{schema}/{table} | /v1/rpc/{fn}
   → internal/driver/*
 ```
 
-## 元数据注册（postgres 模式 / Admin API）
+## Metadata registration (postgres mode / Admin API)
 
 ```
-POST /api/servers → POST /api/tables → （可选）POST /api/functions
+POST /api/servers → POST /api/tables → (optional) POST /api/functions
 ```
 
-file 模式：编辑 [`drivers.yaml`](../drivers.yaml.example)，见 [store.md](store.md)。
+File mode: edit [`drivers.yaml`](../drivers.yaml.example); see [store.md](store.md).
 
-## 包地图
+## Package map
 
-| 层 | 包 |
-|----|-----|
-| 入口 | `cmd/server`、`cmd/migrate` |
+| Layer | Packages |
+|-------|----------|
+| Entry | `cmd/server`, `cmd/migrate`, `cmd/convert` |
 | HTTP | `internal/api` |
-| 编排 | `internal/service` |
+| Orchestration | `internal/service` |
 | Query | `internal/postgrest` |
-| 元数据 | `internal/store` |
-| 驱动 | `internal/driver` |
-| 凭据 | `internal/auth` |
+| Metadata | `internal/store` |
+| Drivers | `internal/driver` |
+| Credentials | `internal/auth` |
 
-## 列名映射
+## Column mapping
 
-API 用**本地**列名；Driver 出站用 `remote_name`。Filter / PATCH body 同样按本地名传入。
+The API uses **local** column names; drivers send **remote** names via `remote_name`. Filters and PATCH bodies also use local names.

@@ -1,5 +1,5 @@
 package store
 
-import "lowcode-wrapper/internal/store/errs"
+import "github.com/monoposer/dataspan/internal/store/errs"
 
 var ErrNotFound = errs.ErrNotFound

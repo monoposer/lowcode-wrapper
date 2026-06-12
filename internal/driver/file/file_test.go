@@ -9,9 +9,9 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 func TestSelectCSVWithFilter(t *testing.T) {

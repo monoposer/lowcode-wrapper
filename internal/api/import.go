@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"lowcode-wrapper/internal/importer"
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/importer"
+	"github.com/monoposer/dataspan/internal/store"
 )
 
 type importRequest struct {

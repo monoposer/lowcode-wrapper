@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"lowcode-wrapper/internal/auth"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/store/file"
+	"github.com/monoposer/dataspan/internal/auth"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/store/file"
 )
 
 func testVault(t *testing.T) *auth.Vault {

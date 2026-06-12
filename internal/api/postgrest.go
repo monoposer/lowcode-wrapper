@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"lowcode-wrapper/internal/postgrest"
-	"lowcode-wrapper/internal/service"
+	"github.com/monoposer/dataspan/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/service"
 )
 
 type PostgRESTHandler struct {

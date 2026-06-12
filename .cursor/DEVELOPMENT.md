@@ -1,35 +1,35 @@
-# 本地开发
+# Local development
 
-架构、driver 分组、store 模式见 [docs/](../docs/README.md)。本文只保留**操作步骤**。
+Architecture, driver groups, and store modes: [docs/](../docs/README.md). This file covers **operations only**.
 
-## 环境变量
+## Environment variables
 
 ```bash
-cp .env.example .env          # WRAPPER_MASTER_KEY、DATABASE_*
-cp drivers.yaml.example drivers.yaml   # 仅 WRAPPER_STORE_MODE=file 时需要
+cp .env.example .env          # WRAPPER_MASTER_KEY, DATABASE_*
+cp drivers.yaml.example drivers.yaml   # only when WRAPPER_STORE_MODE=file
 ```
 
-| 变量 | 说明 |
-|------|------|
-| `WRAPPER_STORE_MODE` | `postgres`（默认）或 `file` |
-| `WRAPPER_DRIVERS_FILE` | file 模式，默认 `./drivers.yaml` |
-| `DATABASE_*` | postgres 模式 Meta DB（仅 `.env`） |
-| `WRAPPER_MASTER_KEY` | 凭据加密主密钥 |
+| Variable | Description |
+|----------|-------------|
+| `WRAPPER_STORE_MODE` | `postgres` (default) or `file` |
+| `WRAPPER_DRIVERS_FILE` | file mode path, default `./drivers.yaml` |
+| `DATABASE_*` | postgres mode Meta DB (`.env` only) |
+| `WRAPPER_MASTER_KEY` | credential encryption master key |
 
-## 启动
+## Start
 
 ```bash
-docker compose up -d postgres   # postgres 模式
-make migrate                    # postgres 模式，首次或 schema 变更
+make postgres-up                # postgres mode (deploy/docker-compose.yml)
+make migrate                    # postgres mode, first run or schema change
 make run                        # :3020
 make test
 ```
 
-file 模式：`WRAPPER_STORE_MODE=file make run`（无需 postgres / migrate）。
+File mode: `WRAPPER_STORE_MODE=file make run` (no postgres / migrate).
 
-Driver 单测：`go test ./internal/driver/http/... ./internal/driver/file/... -v`
+Driver tests: `go test ./internal/driver/http/... ./internal/driver/file/... -v`
 
-## Admin API 示例（postgres 模式）
+## Admin API examples (postgres mode)
 
 ```bash
 BASE=http://localhost:3020
@@ -47,9 +47,9 @@ curl -s -X POST "$BASE/api/tables" \
   -d '{"serverName":"partner_api","tableName":"orders","remoteName":"orders","keyColumns":["id"],"columns":[{"name":"id"},{"name":"amount","remoteName":"total_amount"}]}'
 ```
 
-file 模式等价配置见 `drivers.yaml.example`（凭据 inline 在 `servers`）。
+File-mode equivalent: `drivers.yaml.example` (credentials inline on `servers`).
 
-## 数据 API 示例
+## Data API examples
 
 ```bash
 curl "$BASE/v1/public/orders?id=eq.1&select=id,amount"
@@ -57,15 +57,26 @@ curl -X POST "$BASE/v1/public/orders" -H 'Content-Type: application/json' -d '{"
 curl -X PATCH "$BASE/v1/public/orders?id=eq.1" -H 'Content-Type: application/json' -d '{"amount":"100"}'
 ```
 
-## 迁移
+## Version
 
-- DDL：`scripts/migrations/init.up.sql`
-- `make migrate` / `make migrate-down`（仅 postgres store）
-- 服务启动不自动 migrate
+```bash
+make version              # current VERSION file
+make version-next         # next release (same logic as CI on merge)
+make version-bump         # bump patch (default)
+make version-bump BUMP=minor
+make version-set VER=1.0.0
+./scripts/version.sh --help
+```
 
-## 常见陷阱
+## Migrations
 
-- 未设 `WRAPPER_MASTER_KEY` → 无法启动
-- 未注册 table → `/v1/...` 404
-- HTTP filter 用**本地**列名
-- file driver 大文件全量读内存 → 生产加 `limit`
+- DDL: `scripts/migrations/init.up.sql`
+- `make migrate` / `make migrate-down` (postgres store only)
+- Server does not auto-migrate on startup
+
+## Common pitfalls
+
+- Missing `WRAPPER_MASTER_KEY` → server won't start
+- Unregistered table → `/v1/...` 404
+- HTTP filters use **local** column names
+- File driver loads whole files into memory → add `limit` in production

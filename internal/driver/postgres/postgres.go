@@ -8,9 +8,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 func init() {

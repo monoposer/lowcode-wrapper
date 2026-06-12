@@ -3,8 +3,8 @@ package driver
 import (
 	"context"
 
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 type SelectRequest struct {

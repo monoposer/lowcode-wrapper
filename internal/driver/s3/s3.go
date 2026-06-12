@@ -13,9 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 func init() {

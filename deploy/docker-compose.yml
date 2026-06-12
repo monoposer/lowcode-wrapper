@@ -1,3 +1,5 @@
+# Run from repo root: docker compose -f deploy/docker-compose.yml up -d --build
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -6,24 +8,27 @@ services:
       POSTGRES_PASSWORD: wrapper
       POSTGRES_DB: wrapper_meta
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
-      - wrapper-pg-data:/var/lib/postgresql/data
+      - dataspan-pg-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wrapper -d wrapper_meta"]
       interval: 3s
       timeout: 3s
       retries: 10
 
-  wrapper:
+  dataspan:
     build:
-      context: .
-    image: lowcode-wrapper:local
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: ${DATASPAN_IMAGE:-dataspan:local}
     ports:
       - "${PORT:-3020}:3020"
     environment:
-      DATABASE_URL: postgresql://wrapper:wrapper@postgres:5432/wrapper_meta?sslmode=disable
+      WRAPPER_STORE_MODE: ${WRAPPER_STORE_MODE:-postgres}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://wrapper:wrapper@postgres:5432/wrapper_meta?sslmode=disable}
       WRAPPER_MASTER_KEY: ${WRAPPER_MASTER_KEY:?set WRAPPER_MASTER_KEY in .env}
+      WRAPPER_DRIVERS_FILE: ${WRAPPER_DRIVERS_FILE:-/config/drivers.yaml}
       PORT: "3020"
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_FORMAT: ${LOG_FORMAT:-json}
@@ -31,6 +36,9 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    # File mode: uncomment and mount drivers.yaml
+    # volumes:
+    #   - ../drivers.yaml:/config/drivers.yaml:ro
 
 volumes:
-  wrapper-pg-data:
+  dataspan-pg-data:

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"lowcode-wrapper/internal/importer"
-	"lowcode-wrapper/internal/store/file"
+	"github.com/monoposer/dataspan/internal/importer"
+	"github.com/monoposer/dataspan/internal/store/file"
 )
 
 // ImportDeclarative imports declarative metadata into the Meta DB.

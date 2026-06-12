@@ -1,42 +1,43 @@
-# 内部模块速查
+# Internal modules
 
 ## `internal/api`
 
-Admin + PostgREST 数据面 + Playground + Swagger。
+Admin + PostgREST data plane + Playground + Swagger.
 
-| 路径 | 说明 |
-|------|------|
-| `/health` | 健康检查 |
+| Path | Description |
+|------|-------------|
+| `/health` | Health check (includes `version`) |
 | `/api/credentials` `/api/servers` `/api/tables` `/api/functions` | Admin CRUD |
 | `/v1/{schema}/{table}` | GET/POST/PATCH/DELETE |
 | `/v1/rpc/{name}` | RPC |
 | `/playground/` `/swagger/` | UI |
 
-主要文件：`admin.go`、`postgrest.go`、`logging.go`。curl 示例见 [.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md)。
+Main files: `admin.go`, `postgrest.go`, `logging.go`. Curl examples: [.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md).
 
 ## `internal/auth`
 
-- `WRAPPER_MASTER_KEY` → AES-GCM Vault
-- Admin 写入加密 payload；出站解密；Admin **不**返回明文
-- HTTP auth（`httpauth.go`）：`NONE` / `BASIC` / `API_KEY` / `BEARER_TOKEN` / `CLIENT_CREDENTIALS` / `UNIVERSAL`
+- `WRAPPER_MASTER_KEY` → AES-GCM vault
+- Admin writes encrypted payloads; outbound requests decrypt; Admin **never** returns plaintext
+- HTTP auth (`httpauth.go`): `NONE` / `BASIC` / `API_KEY` / `BEARER_TOKEN` / `CLIENT_CREDENTIALS` / `UNIVERSAL`
 
 ## `internal/service`
 
-Engine：`ResolveTable` → `driver.New` → CRUD / RPC。依赖 `store.Store` 接口。
+Engine: `ResolveTable` → `driver.New` → CRUD / RPC. Depends on `store.Store`.
 
 ## `internal/postgrest`
 
-解析 `id=eq.1`、`select`、`order`、`limit`；`MapFilters` / `MapRowToRemote` 做列名映射。
+Parses `id=eq.1`, `select`, `order`, `limit`; `MapFilters` / `MapRowToRemote` for column mapping.
 
 ## `internal/migrate` + `scripts/migrations`
 
-仅 **postgres store 模式**。DDL：`init.up.sql` / `init.down.sql`。`make migrate`；启动不自动 migrate。
+**Postgres store mode only**. DDL: `init.up.sql` / `init.down.sql`. Run `make migrate`; server startup does not auto-migrate.
 
 ## `cmd/`
 
-| 入口 | 说明 |
-|------|------|
+| Entry | Description |
+|-------|-------------|
 | `cmd/server` | Vault → `store.NewFromEnv` → HTTP handlers |
-| `cmd/migrate` | `up` / `down`，需 `DATABASE_URL` |
+| `cmd/migrate` | `up` / `down`, requires `DATABASE_URL` |
+| `cmd/convert` | Import OpenAPI / SQL / YAML into `drivers.yaml` or store |
 
-Driver 在 `cmd/server/main.go` blank import 注册。
+Drivers are registered via blank imports in `cmd/server/main.go`.

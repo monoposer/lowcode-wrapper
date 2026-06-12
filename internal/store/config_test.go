@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/store"
 )
 
 func TestLoadConfigDefaults(t *testing.T) {

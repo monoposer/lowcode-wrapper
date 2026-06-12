@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"lowcode-wrapper/internal/importer"
+	"github.com/monoposer/dataspan/internal/importer"
 )
 
 func (s *Store) exportDeclarative(ctx context.Context) (importer.DeclarativeDoc, error) {

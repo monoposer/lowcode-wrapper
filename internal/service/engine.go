@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/logx"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/logx"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/store"
 )
 
 type Engine struct {

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"lowcode-wrapper/internal/logx"
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/logx"
+	"github.com/monoposer/dataspan/internal/store"
 )
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

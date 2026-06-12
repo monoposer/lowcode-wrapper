@@ -1,39 +1,40 @@
 ---
-description: lowcode-wrapper 约定与文档索引（细节见 docs/，操作见 DEVELOPMENT.md）
+description: dataspan conventions and doc index (details in docs/, ops in DEVELOPMENT.md)
 alwaysApply: true
 ---
 
-# lowcode-wrapper
+# dataspan
 
-Go HTTP sidecar，`net/http` + JSON，**无 gRPC**。
+Go HTTP sidecar, `net/http` + JSON, **no gRPC**.
 
-## 元数据 Store
+## Metadata store
 
-- `WRAPPER_STORE_MODE=postgres|file` — 决定元数据**从哪读**
-- **postgres**：Meta DB（`.env` `DATABASE_*`）+ Admin API + `make migrate`（`scripts/migrations/init.up.sql`）
-- **file**：[`drivers.yaml`](../drivers.yaml.example) — `servers` / `tables` / `functions`；凭据 **inline** 在 `servers[].credential`（非顶层 credentials）；加载后内存模型与 postgres 相同
-- Meta DB 连接**只在 `.env`**，不进 yaml
+- `WRAPPER_STORE_MODE=postgres|file` — where metadata is **read from**
+- **postgres**: Meta DB (`.env` `DATABASE_*`) + Admin API + `make migrate` (`scripts/migrations/init.up.sql`)
+- **file**: [`drivers.yaml`](../drivers.yaml.example) — `servers` / `tables` / `functions`; credentials **inline** on `servers[].credential` (not top-level); in-memory model matches postgres after load
+- Meta DB connection lives **only in `.env`**, not in yaml
 
-## 数据面
+## Data plane
 
-- Admin：`/api/credentials|servers|tables|functions`
-- 数据：`/v1/{schema}/{table}` CRUD，`/v1/rpc/{fn}`
-- 列名：本地 `name` → 远程 `remote_name`（`postgrest.MapFilters` / `MapRowToRemote`）
+- Admin: `/api/credentials|servers|tables|functions`
+- Data: `/v1/{schema}/{table}` CRUD, `/v1/rpc/{fn}`
+- Columns: local `name` → remote `remote_name` (`postgrest.MapFilters` / `MapRowToRemote`)
 
-## Driver
+## Drivers
 
-- 注册表：`internal/driver`；`http` 对接任意 REST（第三方优先用 `http`，不必新 driver）
-- `notion` / `firebase` / `airtable` / `sheets` 委托 `httpwrap` → `http`
-- 分组与选型：**[docs/drivers.md](../docs/drivers.md)**
+- Registry: `internal/driver`; `http` covers arbitrary REST (prefer `http` for new SaaS)
+- `notion` / `firebase` / `airtable` / `sheets` delegate via `httpwrap` → `http`
+- Groups and selection: **[docs/drivers.md](../docs/drivers.md)**
 
-## 凭据与安全
+## Credentials & security
 
-- `WRAPPER_MASTER_KEY`（32-byte base64）加密 Foreign 凭据；Admin 不返回明文
-- file 模式 credential 可用 `${ENV_VAR}` 展开
+- `WRAPPER_MASTER_KEY` (32-byte base64) encrypts foreign credentials; Admin never returns plaintext
+- File mode credentials may use `${ENV_VAR}` expansion
 
-## 开发
+## Development
 
-- `make test` / `make check`；driver 单测：`internal/driver/http`、`file`
-- 小 diff；未要求不 commit
-- **细节**：@docs/（architecture / store / drivers / modules）
-- **本地调试 curl**：@.cursor/DEVELOPMENT.md
+- `make test` / `make check`; driver tests: `internal/driver/http`, `file`
+- Small diffs; do not commit unless asked
+- **Details**: @docs/ (architecture / store / drivers / modules)
+- **Local curl**: @.cursor/DEVELOPMENT.md
+- **Deploy / Docker**: @deploy/ (`Dockerfile`, `docker-compose.yml`)

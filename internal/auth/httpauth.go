@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 func ApplyHTTPAuth(ctx context.Context, client *http.Client, req *http.Request, auth *models.HTTPAuth) error {

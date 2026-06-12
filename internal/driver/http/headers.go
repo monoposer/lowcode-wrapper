@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 func (d *Driver) setRequestHeaders(req *http.Request, extra ...map[string]string) {

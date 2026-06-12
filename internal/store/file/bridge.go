@@ -1,8 +1,8 @@
 package file
 
 import (
-	"lowcode-wrapper/internal/auth"
-	"lowcode-wrapper/internal/importer"
+	"github.com/monoposer/dataspan/internal/auth"
+	"github.com/monoposer/dataspan/internal/importer"
 )
 
 func declarativeFromImporter(doc importer.DeclarativeDoc) declarativeDoc {

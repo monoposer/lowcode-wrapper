@@ -6,8 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/store"
+	"github.com/monoposer/dataspan/internal/version"
 )
 
 type AdminHandler struct {
@@ -35,7 +36,10 @@ func (h *AdminHandler) health(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status":  "ok",
+		"version": version.Version,
+	})
 }
 
 func (h *AdminHandler) credentials(w http.ResponseWriter, r *http.Request) {

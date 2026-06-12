@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/driver/httpwrap"
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/driver/httpwrap"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 func init() {

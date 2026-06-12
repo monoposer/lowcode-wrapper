@@ -9,9 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 func init() {

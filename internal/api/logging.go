@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"lowcode-wrapper/internal/logx"
+	"github.com/monoposer/dataspan/internal/logx"
 )
 
 type responseRecorder struct {

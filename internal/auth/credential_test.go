@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"lowcode-wrapper/internal/auth"
+	"github.com/monoposer/dataspan/internal/auth"
 )
 
 func TestVaultEncryptDecrypt(t *testing.T) {

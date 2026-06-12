@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"lowcode-wrapper/internal/importer"
+	"github.com/monoposer/dataspan/internal/importer"
 )
 
 // ImportDeclarative replaces or merges declarative metadata and persists it.

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 func TestMergeHTTPServerOptions(t *testing.T) {

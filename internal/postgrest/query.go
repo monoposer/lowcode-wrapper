@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"lowcode-wrapper/internal/models"
+	"github.com/monoposer/dataspan/internal/models"
 )
 
 type Op string

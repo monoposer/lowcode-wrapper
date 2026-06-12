@@ -1,0 +1,59 @@
+name: Tag Release on Merge
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create release tag
+        run: |
+          if git tag --points-at HEAD | grep -qE '^v[0-9]'; then
+            echo "Commit already tagged, skipping."
+            exit 0
+          fi
+
+          LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1)"
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT="$(tr -d '[:space:]' < VERSION)"
+            TAG="v${NEXT}"
+            git tag -a "$TAG" -m "Release ${TAG}"
+            git push origin "$TAG"
+            echo "Tagged first release ${TAG} on merge commit."
+            exit 0
+          fi
+
+          BASE="${LATEST_TAG#v}"
+          IFS=. read -r MAJOR MINOR PATCH <<< "$BASE"
+          PATCH=$((PATCH + 1))
+          NEXT="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${NEXT}"
+
+          printf '%s\n' "$NEXT" > VERSION
+          git add VERSION
+          git commit -m "chore(release): ${TAG}"
+          git tag -a "$TAG" -m "Release ${TAG}"
+          git push origin main
+          git push origin "$TAG"
+          echo "Released ${TAG}"

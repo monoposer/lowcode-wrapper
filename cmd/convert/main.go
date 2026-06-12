@@ -9,10 +9,10 @@ import (
 	"os"
 	"strings"
 
-	"lowcode-wrapper/internal/auth"
-	"lowcode-wrapper/internal/importer"
-	"lowcode-wrapper/internal/logx"
-	"lowcode-wrapper/internal/store"
+	"github.com/monoposer/dataspan/internal/auth"
+	"github.com/monoposer/dataspan/internal/importer"
+	"github.com/monoposer/dataspan/internal/logx"
+	"github.com/monoposer/dataspan/internal/store"
 )
 
 func main() {

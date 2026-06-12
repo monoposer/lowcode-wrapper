@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 
-	"lowcode-wrapper/internal/logx"
-	"lowcode-wrapper/internal/migrate"
+	"github.com/monoposer/dataspan/internal/logx"
+	"github.com/monoposer/dataspan/internal/migrate"
 )
 
 func main() {

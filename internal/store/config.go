@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"lowcode-wrapper/internal/auth"
+	"github.com/monoposer/dataspan/internal/auth"
 
-	"lowcode-wrapper/internal/store/file"
-	"lowcode-wrapper/internal/store/postgres"
+	"github.com/monoposer/dataspan/internal/store/file"
+	"github.com/monoposer/dataspan/internal/store/postgres"
 )
 
 type Mode string

@@ -1,12 +1,14 @@
-# 文档索引
+# Documentation index
 
-| 文档 | 内容 |
-|------|------|
-| [architecture.md](architecture.md) | 请求流、目录、列名映射 |
-| [store.md](store.md) | postgres vs file、`drivers.yaml` |
-| [drivers.md](drivers.md) | 协议分组、选型、扩展 driver |
-| [modules.md](modules.md) | `internal/*` 包速查 |
+| Doc | Contents |
+|-----|----------|
+| [architecture.md](architecture.md) | Request flow, layout, column mapping |
+| [store.md](store.md) | postgres vs file, `drivers.yaml` |
+| [drivers.md](drivers.md) | Protocol groups, selection guide, extending drivers |
+| [modules.md](modules.md) | `internal/*` package map |
 
-**操作手册**（env、curl、make）：[.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md)
+**Operations** (env, curl, make): [.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md)
 
-**配置样例**：[`drivers.yaml.example`](../drivers.yaml.example)、[`.env.example`](../.env.example)
+**Examples**: [`drivers.yaml.example`](../drivers.yaml.example), [`.env.example`](../.env.example)
+
+**Deployment**: [deploy/README.md](../deploy/README.md)

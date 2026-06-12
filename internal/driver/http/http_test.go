@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"testing"
 
-	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/models"
-	"lowcode-wrapper/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/postgrest"
 )
 
 func testResolvedTable() *models.ResolvedTable {

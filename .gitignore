@@ -1,7 +1,8 @@
 # Binaries（make build → bin/server）
 bin/
 /bin/
-/lowcode-wrapper
+/dataspan
+/bin/
 *.exe
 *.exe~
 *.dll

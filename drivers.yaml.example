@@ -1,17 +1,17 @@
-# Foreign Server / Table 声明式配置（file store 模式）
+# Declarative Foreign Server / Table config (file store mode)
 # cp drivers.yaml.example drivers.yaml
 #
-# WRAPPER_STORE_MODE=file 时从本文件加载元数据。
-# WRAPPER_STORE_MODE=postgres 时改由 Meta DB 拆表存储 + Admin API。
+# WRAPPER_STORE_MODE=file loads metadata from this file.
+# WRAPPER_STORE_MODE=postgres uses Meta DB tables + Admin API instead.
 #
-# 两种持久化形态的模型数量不同，加载后内存模型与 postgres store 一致：
-#   file YAML: servers（含 inline credential）+ tables + functions
+# On-disk shapes differ; after load the in-memory model matches postgres store:
+#   file YAML: servers (inline credential) + tables + functions
 #   postgres:  wrapper_credential + wrapper_server + wrapper_table + ...
 #
 # WRAPPER_DRIVERS_FILE=./drivers.yaml
 
 servers:
-  # HTTP 通用 — 凭据直接写在 server 下，无需顶层 credentials 块
+  # Generic HTTP — credential inline on server, no top-level credentials block
   - name: partner_api
     protocol: http
     enabled: true
@@ -107,7 +107,7 @@ tables:
   #   options:
   #     format: yaml
 
-  # 同一 xlsx 多 sheet：remoteName 相同，name 与 sheet 名一致即可
+  # Multiple xlsx sheets: same remoteName, name equals sheet name
   # - server: local_files
   #   schema: public
   #   name: Q1
@@ -120,7 +120,7 @@ tables:
   #   remoteName: sales.xlsx
   #   options:
   #     format: xlsx
-  # # GET /v1/public/Q1 → sales.xlsx 的 Q1 sheet
+  # # GET /v1/public/Q1 → Q1 sheet in sales.xlsx
 
 functions:
   - server: partner_api
@@ -130,7 +130,7 @@ functions:
     remotePath: /orders/create
     method: POST
 
-# 多 server 共享同一凭据时，才使用顶层 credentials + server.credential: 名称引用
+# When multiple servers share one credential, use top-level credentials + server.credential: name
 # credentials:
 #   - name: shared_partner
 #     data:

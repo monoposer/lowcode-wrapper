@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
-	"lowcode-wrapper/internal/auth"
+	"github.com/monoposer/dataspan/internal/auth"
 )
 
 // declarativeDoc is the file-mode drivers.yaml shape. It intentionally differs from
