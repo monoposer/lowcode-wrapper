@@ -71,24 +71,26 @@ file 模式等价 YAML 见 `drivers.yaml.example` 中 `partner_api` 示例。
 
 **认证类型**（`options.auth.type`）：`NONE` · `BASIC` · `API_KEY` · `BEARER_TOKEN` · `CLIENT_CREDENTIALS` · `UNIVERSAL`
 
-**实现**：`internal/driver/httpdriver/`
+**实现**：`internal/driver/http/`
 
-**测试**：`go test ./internal/driver/httpdriver/... -v`
+**测试**：`go test ./internal/driver/http/... -v`
 
 ---
 
 ## 2. HTTP 预设包装 — 委托 `httpwrap`
 
-对常见 SaaS 预填 endpoint、header、Bearer 规则，底层仍走 `httpdriver`。
+对常见 SaaS 预填 endpoint、header、Bearer 规则，底层仍走 `http`。
 
 | protocol | 默认 endpoint | 凭据字段 | 代码 |
 |----------|---------------|----------|------|
-| `notion` | `https://api.notion.com/v1` | `token` / `integrationToken` | `notiondriver/` |
-| `firebase` | Firestore REST（由 `projectId` 推导） | `accessToken` / `token` | `firebasedriver/` |
+| `notion` | `https://api.notion.com/v1` | `token` / `integrationToken` | `notion/` |
+| `firebase` | Firestore REST（由 `projectId` 推导） | `accessToken` / `token` | `firebase/` |
+| `airtable` | `https://api.airtable.com/v0` | `token` / `personalAccessToken` | `airtable/` |
+| `sheets` | `https://sheets.googleapis.com/v4` | `accessToken` / `token` | `sheets/` |
 
-包装逻辑：`internal/driver/httpwrap/wrap.go` → `NewHTTPDriver()` 合并 defaults 后调用 `httpdriver.New()`。
+包装逻辑：`internal/driver/httpwrap/wrap.go` → `NewHTTPDriver()` 合并 defaults 后调用 `http.New()`。
 
-若 Notion/Firebase 的 REST 形态与默认不符，可直接改用 **`protocol: http`** 并手动配 endpoint。
+若预设与实际上游不符，可直接改用 **`protocol: http`** 并手动配 endpoint。
 
 ---
 
@@ -113,8 +115,19 @@ file 模式等价 YAML 见 `drivers.yaml.example` 中 `partner_api` 示例。
 
 | protocol | 说明 | 主要 options | Phase 1 能力 |
 |----------|------|--------------|--------------|
-| `file` | 本地目录 CSV / JSON / NDJSON | `rootPath`；table: `format` | **仅 SELECT** |
+| `file` | 本地目录 CSV / JSON / NDJSON / YAML / XLSX | `rootPath`；table: `format` | **仅 SELECT** |
 | `s3` | AWS S3 对象 | `bucket`, `region?`；table: `prefix`, `format` | **仅 SELECT** |
+
+本地 **YAML / Excel** 与 CSV 同属 tabular 只读场景，放在 `file` 驱动下通过 `format` 区分即可；**Google Sheets / Airtable** 是在线 API，用 `sheets` / `airtable` 预设（底层 `http`）。
+
+**file 驱动映射约定**
+
+| 字段 | 作用 |
+|------|------|
+| `schema` | 仅 API 路径 `/v1/{schema}/{table}`，与磁盘无关 |
+| `name` | 逻辑表名；xlsx 时**等于 sheet 名** |
+| `remoteName` | 磁盘文件路径（相对 `rootPath`）；省略时用 `name` |
+| `options.format` | 文件格式；省略时按扩展名推断 |
 
 大文件会全量读入内存，生产环境请加 `limit`。
 
@@ -125,19 +138,19 @@ file 模式等价 YAML 见 `drivers.yaml.example` 中 `partner_api` 示例。
 | 需求 | 推荐 |
 |------|------|
 | 对接任意 REST API | **`http`** |
-| 对接 Notion / Firestore 且接受预设 | `notion` / `firebase` |
+| 对接 Notion / Firestore / Airtable / Google Sheets 且接受预设 | `notion` / `firebase` / `airtable` / `sheets` |
 | 直连 PG / MySQL / Mongo / Redis | 对应原生 protocol |
-| 读本地 CSV / S3 静态文件 | `file` / `s3` |
+| 读本地 CSV / YAML / Excel / S3 静态文件 | `file` / `s3` |
 | 新 SaaS，无专用 driver | **`http`** + credential + column `remote_name` |
 
 ## 扩展新驱动
 
-1. 在 `internal/driver/<name>driver/` 实现 `driver.Driver` 接口
+1. 在 `internal/driver/<name>/` 实现 `driver.Driver` 接口
 2. `init()` 中 `driver.Register(models.ProtocolXxx, New)`
-3. 在 `cmd/server/main.go` 空白导入 `_ "lowcode-wrapper/internal/driver/xxxdriver"`
+3. 在 `cmd/server/main.go` 空白导入 `_ "lowcode-wrapper/internal/driver/<name>"`
 4. 若只是 REST 差异，**优先包装 `httpwrap`**，不必复制 CRUD 逻辑
 5. 更新 `scripts/migrations/init.up.sql` 中 `wrapper_server.protocol` CHECK 约束
-6. 在 `internal/driver/<name>driver/` 添加单测（参考 `httpdriver`、`filedriver`）
+6. 在对应包下添加单测（参考 `http`、`file`）
 
 ## Driver 接口
 

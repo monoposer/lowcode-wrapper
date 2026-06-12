@@ -241,6 +241,46 @@ paths:
         "400":
           $ref: "#/components/responses/Error"
 
+  /api/import:
+    post:
+      tags: [Admin — Import]
+      summary: Import OpenAPI / SQL / YAML into Meta DB (postgres store only)
+      operationId: importMetadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                kind:
+                  type: string
+                  enum: [openapi, sql, yaml]
+                dialect:
+                  type: string
+                  enum: [postgres, mysql, sqlite]
+                mode:
+                  type: string
+                  enum: [replace, merge]
+                serverName:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Import summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+
   /v1/{schema}/{table}:
     parameters:
       - $ref: "#/components/parameters/SchemaPath"
@@ -468,12 +508,15 @@ components:
         - http
         - postgres
         - mysql
+        - sqlite
         - file
         - mongo
         - s3
         - firebase
-        - notion
-        - redis
+		- notion
+		- redis
+		- airtable
+		- sheets
 
     FunctionOperation:
       type: string
@@ -697,3 +740,44 @@ components:
         options:
           type: object
           additionalProperties: true
+
+    ImportRequest:
+      type: object
+      required: [content]
+      properties:
+        kind:
+          type: string
+          enum: [openapi, sql, yaml]
+        content:
+          type: string
+        dialect:
+          type: string
+          enum: [postgres, mysql, sqlite]
+        mode:
+          type: string
+          enum: [replace, merge]
+          default: replace
+        serverName:
+          type: string
+        endpoint:
+          type: string
+        schema:
+          type: string
+          default: public
+
+    ImportResponse:
+      type: object
+      properties:
+        kind:
+          type: string
+        mode:
+          type: string
+        imported:
+          type: object
+          properties:
+            servers:
+              type: integer
+            tables:
+              type: integer
+            functions:
+              type: integer

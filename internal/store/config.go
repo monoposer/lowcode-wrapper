@@ -43,7 +43,7 @@ func LoadConfig() (Config, error) {
 	if path == "" {
 		path = defaultDriversFile
 	}
-	cfg.File.Path = path
+	cfg.File.Path = path // file path or directory of *.yaml / *.yml
 
 	switch cfg.Mode {
 	case ModePostgres, ModeFile:

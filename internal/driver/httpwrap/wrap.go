@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"lowcode-wrapper/internal/driver"
-	"lowcode-wrapper/internal/driver/httpdriver"
+	httpdriver "lowcode-wrapper/internal/driver/http"
 	"lowcode-wrapper/internal/models"
 )
 

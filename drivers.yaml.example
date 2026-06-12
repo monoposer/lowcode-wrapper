@@ -33,6 +33,26 @@ servers:
     options:
       rootPath: /tmp/wrapper-data
 
+  # - name: airtable_ws
+  #   protocol: airtable
+  #   credential:
+  #     token: ${AIRTABLE_TOKEN}
+  #   options: {}
+  # tables:
+  #   - server: airtable_ws
+  #     name: contacts
+  #     remoteName: appXXXXX/Contacts
+
+  # - name: gsheet
+  #   protocol: sheets
+  #   credential:
+  #     accessToken: ${GOOGLE_ACCESS_TOKEN}
+  #   options: {}
+  # tables:
+  #   - server: gsheet
+  #     name: roster
+  #     remoteName: spreadsheetId/Sheet1!A:Z
+
   - name: analytics_pg
     protocol: postgres
     credential:
@@ -79,6 +99,28 @@ tables:
         dataType: text
       - name: name
         dataType: text
+
+  # - server: local_files
+  #   schema: public
+  #   name: catalog
+  #   remoteName: catalog.yaml
+  #   options:
+  #     format: yaml
+
+  # 同一 xlsx 多 sheet：remoteName 相同，name 与 sheet 名一致即可
+  # - server: local_files
+  #   schema: public
+  #   name: Q1
+  #   remoteName: sales.xlsx
+  #   options:
+  #     format: xlsx
+  # - server: local_files
+  #   schema: public
+  #   name: Q2
+  #   remoteName: sales.xlsx
+  #   options:
+  #     format: xlsx
+  # # GET /v1/public/Q1 → sales.xlsx 的 Q1 sheet
 
 functions:
   - server: partner_api

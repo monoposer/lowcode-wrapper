@@ -11,15 +11,17 @@ import (
 	"lowcode-wrapper/internal/service"
 	"lowcode-wrapper/internal/store"
 
-	_ "lowcode-wrapper/internal/driver/filedriver"
-	_ "lowcode-wrapper/internal/driver/firebasedriver"
-	_ "lowcode-wrapper/internal/driver/httpdriver"
-	_ "lowcode-wrapper/internal/driver/mongodriver"
-	_ "lowcode-wrapper/internal/driver/mysqldriver"
-	_ "lowcode-wrapper/internal/driver/notiondriver"
-	_ "lowcode-wrapper/internal/driver/pgdriver"
-	_ "lowcode-wrapper/internal/driver/redisdriver"
-	_ "lowcode-wrapper/internal/driver/s3driver"
+	_ "lowcode-wrapper/internal/driver/airtable"
+	_ "lowcode-wrapper/internal/driver/file"
+	_ "lowcode-wrapper/internal/driver/firebase"
+	_ "lowcode-wrapper/internal/driver/http"
+	_ "lowcode-wrapper/internal/driver/mongo"
+	_ "lowcode-wrapper/internal/driver/mysql"
+	_ "lowcode-wrapper/internal/driver/notion"
+	_ "lowcode-wrapper/internal/driver/postgres"
+	_ "lowcode-wrapper/internal/driver/redis"
+	_ "lowcode-wrapper/internal/driver/s3"
+	_ "lowcode-wrapper/internal/driver/sheets"
 )
 
 func main() {

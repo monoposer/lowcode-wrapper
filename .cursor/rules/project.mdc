@@ -23,7 +23,7 @@ Go HTTP sidecar，`net/http` + JSON，**无 gRPC**。
 ## Driver
 
 - 注册表：`internal/driver`；`http` 对接任意 REST（第三方优先用 `http`，不必新 driver）
-- `notion` / `firebase` 委托 `httpwrap` → `httpdriver`
+- `notion` / `firebase` / `airtable` / `sheets` 委托 `httpwrap` → `http`
 - 分组与选型：**[docs/drivers.md](../docs/drivers.md)**
 
 ## 凭据与安全
@@ -33,7 +33,7 @@ Go HTTP sidecar，`net/http` + JSON，**无 gRPC**。
 
 ## 开发
 
-- `make test` / `make check`；driver 单测：`internal/driver/httpdriver`、`filedriver`
+- `make test` / `make check`；driver 单测：`internal/driver/http`、`file`
 - 小 diff；未要求不 commit
 - **细节**：@docs/（architecture / store / drivers / modules）
 - **本地调试 curl**：@.cursor/DEVELOPMENT.md

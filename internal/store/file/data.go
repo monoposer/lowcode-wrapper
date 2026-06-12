@@ -9,22 +9,24 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type snapshot struct {
-	Credentials []credentialRecord `yaml:"credentials"`
-	Servers     []serverRecord     `yaml:"servers"`
-	Tables      []tableRecord      `yaml:"tables"`
-	Columns     []columnRecord     `yaml:"columns"`
-	Functions   []functionRecord   `yaml:"functions"`
+type Snapshot struct {
+	Credentials []CredentialRecord `yaml:"credentials"`
+	Servers     []ServerRecord     `yaml:"servers"`
+	Tables      []TableRecord      `yaml:"tables"`
+	Columns     []ColumnRecord     `yaml:"columns"`
+	Functions   []FunctionRecord   `yaml:"functions"`
 }
 
-type credentialRecord struct {
+type snapshot = Snapshot
+
+type CredentialRecord struct {
 	ID        uuid.UUID `yaml:"id"`
 	Name      string    `yaml:"name"`
 	Payload   string    `yaml:"payload"`
 	CreatedAt time.Time `yaml:"createdAt"`
 }
 
-type serverRecord struct {
+type ServerRecord struct {
 	ID            uuid.UUID  `yaml:"id"`
 	Name          string     `yaml:"name"`
 	Protocol      string     `yaml:"protocol"`
@@ -34,7 +36,7 @@ type serverRecord struct {
 	UpdatedAt     time.Time  `yaml:"updatedAt"`
 }
 
-type tableRecord struct {
+type TableRecord struct {
 	ID         uuid.UUID `yaml:"id"`
 	ServerID   uuid.UUID `yaml:"serverId"`
 	SchemaName string    `yaml:"schemaName"`
@@ -44,7 +46,7 @@ type tableRecord struct {
 	Options    yaml.Node `yaml:"options"`
 }
 
-type columnRecord struct {
+type ColumnRecord struct {
 	ID         uuid.UUID `yaml:"id"`
 	TableID    uuid.UUID `yaml:"tableId"`
 	Name       string    `yaml:"name"`
@@ -54,7 +56,7 @@ type columnRecord struct {
 	Position   int       `yaml:"position"`
 }
 
-type functionRecord struct {
+type FunctionRecord struct {
 	ID         uuid.UUID `yaml:"id"`
 	ServerID   uuid.UUID `yaml:"serverId"`
 	SchemaName string    `yaml:"schemaName"`
@@ -63,6 +65,20 @@ type functionRecord struct {
 	RemotePath string    `yaml:"remotePath,omitempty"`
 	Method     string    `yaml:"method,omitempty"`
 	Options    yaml.Node `yaml:"options"`
+}
+
+type credentialRecord = CredentialRecord
+type serverRecord = ServerRecord
+type tableRecord = TableRecord
+type columnRecord = ColumnRecord
+type functionRecord = FunctionRecord
+
+func DecodePayload(s string) ([]byte, error) {
+	return decodePayload(s)
+}
+
+func NodeToRaw(node yaml.Node) json.RawMessage {
+	return nodeToRaw(node)
 }
 
 func encodePayload(payload []byte) string {

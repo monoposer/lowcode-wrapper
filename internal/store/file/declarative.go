@@ -96,12 +96,17 @@ func isDeclarativeYAML(raw []byte) bool {
 			Payload string         `yaml:"payload"`
 		} `yaml:"credentials"`
 		Servers []struct {
+			ID         uuid.UUID `yaml:"id"`
+			Protocol   string    `yaml:"protocol"`
 			Credential yaml.Node `yaml:"credential"`
 		} `yaml:"servers"`
 		Tables []struct {
 			Server   string    `yaml:"server"`
 			ServerID uuid.UUID `yaml:"serverId"`
 		} `yaml:"tables"`
+		Functions []struct {
+			Server string `yaml:"server"`
+		} `yaml:"functions"`
 	}
 	if err := yaml.Unmarshal(raw, &probe); err != nil {
 		return false
@@ -112,6 +117,9 @@ func isDeclarativeYAML(raw []byte) bool {
 		}
 	}
 	for _, s := range probe.Servers {
+		if strings.TrimSpace(s.Protocol) != "" && s.ID == uuid.Nil {
+			return true
+		}
 		if s.Credential.Kind == yaml.MappingNode {
 			return true
 		}
@@ -121,6 +129,11 @@ func isDeclarativeYAML(raw []byte) bool {
 	}
 	for _, t := range probe.Tables {
 		if t.Server != "" && t.ServerID == uuid.Nil {
+			return true
+		}
+	}
+	for _, f := range probe.Functions {
+		if strings.TrimSpace(f.Server) != "" {
 			return true
 		}
 	}

@@ -2,7 +2,9 @@ BINARY := bin/server
 MAIN   := ./cmd/server
 PORT   ?= 3020
 
-.PHONY: run start build clean check test migrate migrate-up migrate-down docker-build
+.PHONY: run start build clean check test migrate migrate-up migrate-down docker-build convert build-convert
+
+CONVERT_BINARY := bin/wrapper-convert
 
 IMAGE ?= lowcode-wrapper:local
 
@@ -22,6 +24,7 @@ clean:
 check:
 	go build -o /dev/null $(MAIN)
 	go build -o /dev/null ./cmd/migrate
+	go build -o /dev/null ./cmd/convert
 
 test:
 	go test ./...
@@ -34,3 +37,8 @@ migrate-down:
 
 docker-build:
 	docker build -t $(IMAGE) .
+
+build-convert convert:
+	@mkdir -p bin
+	go build -o $(CONVERT_BINARY) ./cmd/convert
+	@echo "built: $(CONVERT_BINARY)"

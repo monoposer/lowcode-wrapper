@@ -27,7 +27,7 @@ make test
 
 file 模式：`WRAPPER_STORE_MODE=file make run`（无需 postgres / migrate）。
 
-Driver 单测：`go test ./internal/driver/httpdriver/... ./internal/driver/filedriver/... -v`
+Driver 单测：`go test ./internal/driver/http/... ./internal/driver/file/... -v`
 
 ## Admin API 示例（postgres 模式）
 

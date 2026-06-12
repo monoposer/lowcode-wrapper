@@ -16,19 +16,21 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"lowcode-wrapper/internal/auth"
+	"lowcode-wrapper/internal/importer"
 	"lowcode-wrapper/internal/models"
 	"lowcode-wrapper/internal/store/errs"
 )
 
 type Config struct {
-	Path string
+	Path string // file or directory (directory loads all *.yaml / *.yml)
 }
 
 type Store struct {
-	path  string
-	vault *auth.Vault
-	mu    sync.Mutex
-	data  snapshot
+	path       string
+	persistPath string
+	vault      *auth.Vault
+	mu         sync.Mutex
+	data       snapshot
 }
 
 func New(vault *auth.Vault, cfg Config) (*Store, error) {
@@ -36,11 +38,15 @@ func New(vault *auth.Vault, cfg Config) (*Store, error) {
 	if path == "" {
 		return nil, fmt.Errorf("drivers yaml path is required")
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	persistPath, err := resolvePersistPath(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(persistPath), 0755); err != nil {
 		return nil, fmt.Errorf("create drivers dir: %w", err)
 	}
 
-	s := &Store{path: path, vault: vault}
+	s := &Store{path: path, persistPath: persistPath, vault: vault}
 	if err := s.load(); err != nil {
 		return nil, err
 	}
@@ -52,10 +58,36 @@ func Ping(cfg Config) error {
 	if path == "" {
 		return fmt.Errorf("drivers yaml path is required")
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	persistPath, err := resolvePersistPath(path)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(persistPath), 0755); err != nil {
 		return fmt.Errorf("create drivers dir: %w", err)
 	}
 	return nil
+}
+
+func resolvePersistPath(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if strings.HasSuffix(path, string(os.PathSeparator)) || looksLikeDirPath(path) {
+				return filepath.Join(path, "drivers.yaml"), nil
+			}
+			return path, nil
+		}
+		return "", err
+	}
+	if info.IsDir() {
+		return filepath.Join(path, "drivers.yaml"), nil
+	}
+	return path, nil
+}
+
+func looksLikeDirPath(path string) bool {
+	base := filepath.Base(path)
+	return !strings.Contains(base, ".")
 }
 
 func (s *Store) Close() {}
@@ -65,32 +97,89 @@ func (s *Store) Vault() *auth.Vault {
 }
 
 func (s *Store) load() error {
-	data, err := os.ReadFile(s.path)
+	rawDocs, err := s.readDeclarativeSources()
+	if err != nil {
+		return err
+	}
+	if len(rawDocs) == 0 {
+		return s.persistLocked()
+	}
+	var importerDocs []importer.DeclarativeDoc
+	for _, raw := range rawDocs {
+		if len(strings.TrimSpace(string(raw))) == 0 {
+			continue
+		}
+		if isDeclarativeYAML(raw) {
+			var doc declarativeDoc
+			if err := yaml.Unmarshal(raw, &doc); err != nil {
+				return fmt.Errorf("parse drivers yaml: %w", err)
+			}
+			importerDocs = append(importerDocs, declarativeToImporter(doc))
+			continue
+		}
+		if err := yaml.Unmarshal(raw, &s.data); err != nil {
+			return fmt.Errorf("parse drivers file: %w", err)
+		}
+		return nil
+	}
+	if len(importerDocs) == 0 {
+		return nil
+	}
+	merged, err := importer.MergeDeclarativeDocs(importerDocs...)
+	if err != nil {
+		return err
+	}
+	snap, err := compileDeclarative(s.vault, declarativeFromImporter(merged))
+	if err != nil {
+		return err
+	}
+	s.data = snap
+	return nil
+}
+
+func (s *Store) readDeclarativeSources() ([][]byte, error) {
+	info, err := os.Stat(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return s.persistLocked()
+			return nil, nil
 		}
-		return fmt.Errorf("read drivers file: %w", err)
+		return nil, fmt.Errorf("read drivers path: %w", err)
 	}
-	if len(strings.TrimSpace(string(data))) == 0 {
-		return nil
-	}
-	if isDeclarativeYAML(data) {
-		var doc declarativeDoc
-		if err := yaml.Unmarshal(data, &doc); err != nil {
-			return fmt.Errorf("parse drivers yaml: %w", err)
-		}
-		snap, err := compileDeclarative(s.vault, doc)
+	if !info.IsDir() {
+		data, err := os.ReadFile(s.path)
 		if err != nil {
-			return err
+			if os.IsNotExist(err) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("read drivers file: %w", err)
 		}
-		s.data = snap
-		return nil
+		return [][]byte{data}, nil
 	}
-	if err := yaml.Unmarshal(data, &s.data); err != nil {
-		return fmt.Errorf("parse drivers file: %w", err)
+	entries, err := os.ReadDir(s.path)
+	if err != nil {
+		return nil, fmt.Errorf("read drivers dir: %w", err)
 	}
-	return nil
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		lower := strings.ToLower(name)
+		if strings.HasSuffix(lower, ".yaml") || strings.HasSuffix(lower, ".yml") {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	var out [][]byte
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(s.path, name))
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", name, err)
+		}
+		out = append(out, data)
+	}
+	return out, nil
 }
 
 func (s *Store) persistLocked() error {
@@ -102,7 +191,7 @@ func (s *Store) persistLocked() error {
 	if err != nil {
 		return fmt.Errorf("marshal drivers file: %w", err)
 	}
-	dir := filepath.Dir(s.path)
+	dir := filepath.Dir(s.persistPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -120,7 +209,7 @@ func (s *Store) persistLocked() error {
 		_ = os.Remove(tmpPath)
 		return err
 	}
-	return os.Rename(tmpPath, s.path)
+	return os.Rename(tmpPath, s.persistPath)
 }
 
 func (s *Store) withLock(fn func() error) error {

@@ -11,8 +11,9 @@ CREATE TABLE IF NOT EXISTS wrapper_server (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name            text NOT NULL UNIQUE,
   protocol        text NOT NULL CHECK (protocol IN (
-    'http', 'postgres', 'mysql', 'file',
-    'mongo', 's3', 'firebase', 'notion', 'redis'
+    'http', 'postgres', 'mysql', 'sqlite', 'file',
+    'mongo', 's3', 'firebase', 'notion', 'redis',
+    'airtable', 'sheets'
   )),
   options         jsonb NOT NULL DEFAULT '{}',
   credential_ref  uuid REFERENCES wrapper_credential(id) ON DELETE SET NULL,

@@ -27,6 +27,7 @@ func (h *AdminHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/tables", h.tables)
 	mux.HandleFunc("/api/tables/", h.tableColumns)
 	mux.HandleFunc("/api/functions", h.functions)
+	mux.HandleFunc("/api/import", h.importMetadata)
 }
 
 func (h *AdminHandler) health(w http.ResponseWriter, r *http.Request) {

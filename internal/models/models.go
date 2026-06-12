@@ -13,12 +13,15 @@ const (
 	ProtocolHTTP     Protocol = "http"
 	ProtocolPostgres Protocol = "postgres"
 	ProtocolMySQL    Protocol = "mysql"
+	ProtocolSQLite   Protocol = "sqlite"
 	ProtocolFile     Protocol = "file"
 	ProtocolMongo    Protocol = "mongo"
 	ProtocolS3       Protocol = "s3"
 	ProtocolFirebase Protocol = "firebase"
 	ProtocolNotion   Protocol = "notion"
 	ProtocolRedis    Protocol = "redis"
+	ProtocolAirtable Protocol = "airtable"
+	ProtocolSheets   Protocol = "sheets"
 )
 
 type AuthType string
@@ -180,7 +183,7 @@ type FileServerOptions struct {
 }
 
 type FileTableOptions struct {
-	Format string `json:"format"` // csv, json, ndjson
+	Format string `json:"format"` // csv, json, ndjson, yaml, xlsx
 }
 
 // NotionServerOptions — REST API; driver delegates to http with Notion defaults.
@@ -195,6 +198,18 @@ type FirebaseServerOptions struct {
 	ProjectID string `json:"projectId"`
 	Database  string `json:"database,omitempty"` // default (default)
 	Endpoint  string `json:"endpoint,omitempty"`
+}
+
+// AirtableServerOptions — Airtable REST; delegates to http with Airtable defaults.
+type AirtableServerOptions struct {
+	Endpoint string            `json:"endpoint,omitempty"`
+	Headers  map[string]string `json:"headers,omitempty"`
+}
+
+// SheetsServerOptions — Google Sheets REST; delegates to http with Sheets API defaults.
+type SheetsServerOptions struct {
+	Endpoint string            `json:"endpoint,omitempty"`
+	Headers  map[string]string `json:"headers,omitempty"`
 }
 
 // MongoServerOptions — native MongoDB driver.
