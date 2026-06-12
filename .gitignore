@@ -20,6 +20,9 @@ vendor/
 .env
 .env.*
 !.env.example
+store.yaml
+drivers.yaml
+data/
 
 # IDE / OS
 .DS_Store

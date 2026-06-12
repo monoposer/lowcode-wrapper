@@ -1,0 +1,102 @@
+# Foreign Server / Table 声明式配置（file store 模式）
+# cp drivers.yaml.example drivers.yaml
+#
+# WRAPPER_STORE_MODE=file 时从本文件加载元数据。
+# WRAPPER_STORE_MODE=postgres 时改由 Meta DB 拆表存储 + Admin API。
+#
+# 两种持久化形态的模型数量不同，加载后内存模型与 postgres store 一致：
+#   file YAML: servers（含 inline credential）+ tables + functions
+#   postgres:  wrapper_credential + wrapper_server + wrapper_table + ...
+#
+# WRAPPER_DRIVERS_FILE=./drivers.yaml
+
+servers:
+  # HTTP 通用 — 凭据直接写在 server 下，无需顶层 credentials 块
+  - name: partner_api
+    protocol: http
+    enabled: true
+    credential:
+      apiKey: ${PARTNER_API_KEY}
+    options:
+      endpoint: https://api.example.com
+      basePath: /v1
+      headers:
+        X-Tenant: acme
+      auth:
+        type: API_KEY
+        options:
+          label: X-Api-Key
+
+  - name: local_files
+    protocol: file
+    enabled: true
+    options:
+      rootPath: /tmp/wrapper-data
+
+  - name: analytics_pg
+    protocol: postgres
+    credential:
+      host: ${ANALYTICS_PG_HOST}
+      port: ${ANALYTICS_PG_PORT}
+      username: ${ANALYTICS_PG_USER}
+      password: ${ANALYTICS_PG_PASSWORD}
+      database: analytics
+    options:
+      schema: public
+
+  # - name: notion_ws
+  #   protocol: notion
+  #   credential:
+  #     token: ${NOTION_TOKEN}
+  #   options:
+  #     notionVersion: "2022-06-28"
+
+tables:
+  - server: partner_api
+    schema: public
+    name: orders
+    remoteName: orders
+    keyColumns: [id]
+    options:
+      headers:
+        X-Table: orders
+    columns:
+      - name: id
+        dataType: text
+      - name: amount
+        dataType: text
+        remoteName: total_amount
+
+  - server: local_files
+    schema: public
+    name: items
+    remoteName: items.csv
+    keyColumns: [id]
+    options:
+      format: csv
+    columns:
+      - name: id
+        dataType: text
+      - name: name
+        dataType: text
+
+functions:
+  - server: partner_api
+    schema: public
+    name: create_order
+    operation: invoke
+    remotePath: /orders/create
+    method: POST
+
+# 多 server 共享同一凭据时，才使用顶层 credentials + server.credential: 名称引用
+# credentials:
+#   - name: shared_partner
+#     data:
+#       apiKey: ${PARTNER_API_KEY}
+# servers:
+#   - name: api_a
+#     protocol: http
+#     credential: shared_partner
+#   - name: api_b
+#     protocol: http
+#     credential: shared_partner

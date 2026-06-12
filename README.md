@@ -46,8 +46,11 @@ Migrations run once via the `migrate` service; the server image only contains `/
 
 ## 文档
 
-- [AGENTS.md](AGENTS.md) — Cursor / Agent 开发说明
-- [.cursor/DEVELOPMENT.md](.cursor/DEVELOPMENT.md) — 本地调试、API 示例、协议配置
+| 文档 | 说明 |
+|------|------|
+| [docs/](docs/README.md) | 架构、store、drivers、模块速查 |
+| [.cursor/DEVELOPMENT.md](.cursor/DEVELOPMENT.md) | 本地 env、curl、make |
+| [AGENTS.md](AGENTS.md) | Cursor Agent 入口 |
 
 ## License
 

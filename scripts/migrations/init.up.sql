@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS wrapper_credential (
 CREATE TABLE IF NOT EXISTS wrapper_server (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name            text NOT NULL UNIQUE,
-  protocol        text NOT NULL CHECK (protocol IN ('http','postgres','mysql','file')),
+  protocol        text NOT NULL CHECK (protocol IN (
+    'http', 'postgres', 'mysql', 'file',
+    'mongo', 's3', 'firebase', 'notion', 'redis'
+  )),
   options         jsonb NOT NULL DEFAULT '{}',
   credential_ref  uuid REFERENCES wrapper_credential(id) ON DELETE SET NULL,
   enabled         boolean NOT NULL DEFAULT true,

@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"lowcode-wrapper/internal/logx"
-	store "lowcode-wrapper/internal/store/postgres"
+	"lowcode-wrapper/internal/store"
 )
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

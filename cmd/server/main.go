@@ -9,7 +9,7 @@ import (
 	"lowcode-wrapper/internal/auth"
 	"lowcode-wrapper/internal/logx"
 	"lowcode-wrapper/internal/service"
-	store "lowcode-wrapper/internal/store/postgres"
+	"lowcode-wrapper/internal/store"
 
 	_ "lowcode-wrapper/internal/driver/filedriver"
 	_ "lowcode-wrapper/internal/driver/firebasedriver"

@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 
 	"lowcode-wrapper/internal/models"
-	store "lowcode-wrapper/internal/store/postgres"
+	"lowcode-wrapper/internal/store"
 )
 
 type AdminHandler struct {
-	Store *store.Store
+	Store store.Store
 }
 
-func NewAdminHandler(s *store.Store) *AdminHandler {
+func NewAdminHandler(s store.Store) *AdminHandler {
 	return &AdminHandler{Store: s}
 }
 

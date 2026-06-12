@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,19 +13,18 @@ import (
 
 	"lowcode-wrapper/internal/auth"
 	"lowcode-wrapper/internal/models"
+	"lowcode-wrapper/internal/store/errs"
 )
-
-var ErrNotFound = errors.New("not found")
 
 type Store struct {
 	pool  *pgxpool.Pool
 	vault *auth.Vault
 }
 
-func NewFromEnv(vault *auth.Vault) (*Store, error) {
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		return nil, fmt.Errorf("DATABASE_URL is required")
+func New(vault *auth.Vault, cfg Config) (*Store, error) {
+	connStr, err := cfg.ResolveDSN()
+	if err != nil {
+		return nil, err
 	}
 	pool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
@@ -37,6 +35,19 @@ func NewFromEnv(vault *auth.Vault) (*Store, error) {
 		return nil, fmt.Errorf("ping: %w", err)
 	}
 	return &Store{pool: pool, vault: vault}, nil
+}
+
+func Ping(ctx context.Context, cfg Config) error {
+	connStr, err := cfg.ResolveDSN()
+	if err != nil {
+		return err
+	}
+	pool, err := pgxpool.New(ctx, connStr)
+	if err != nil {
+		return fmt.Errorf("connect: %w", err)
+	}
+	defer pool.Close()
+	return pool.Ping(ctx)
 }
 
 func (s *Store) Close() {
@@ -81,7 +92,7 @@ func (s *Store) DeleteCredential(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 	return nil
 }
@@ -91,7 +102,7 @@ func (s *Store) ResolveCredential(ctx context.Context, ref uuid.UUID) (map[strin
 	err := s.pool.QueryRow(ctx, `SELECT payload FROM wrapper_credential WHERE id = $1`, ref).Scan(&payload)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, errs.ErrNotFound
 		}
 		return nil, err
 	}
@@ -154,7 +165,7 @@ func (s *Store) GetServerByID(ctx context.Context, id uuid.UUID) (*models.Server
 	`, id).Scan(&srv.ID, &srv.Name, &srv.Protocol, &srv.Options, &srv.CredentialRef, &srv.Enabled, &srv.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, errs.ErrNotFound
 		}
 		return nil, err
 	}
@@ -169,7 +180,7 @@ func (s *Store) GetServerByName(ctx context.Context, name string) (*models.Serve
 	`, name).Scan(&srv.ID, &srv.Name, &srv.Protocol, &srv.Options, &srv.CredentialRef, &srv.Enabled, &srv.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, errs.ErrNotFound
 		}
 		return nil, err
 	}
@@ -207,7 +218,7 @@ func (s *Store) DeleteServer(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return ErrNotFound
+		return errs.ErrNotFound
 	}
 	return nil
 }
@@ -320,7 +331,7 @@ func (s *Store) ListColumns(ctx context.Context, schema, table string) ([]models
 	`, schema, table).Scan(&tableID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, errs.ErrNotFound
 		}
 		return nil, err
 	}
@@ -359,7 +370,7 @@ func (s *Store) ResolveTable(ctx context.Context, schema, table string) (*models
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, errs.ErrNotFound
 		}
 		return nil, err
 	}
@@ -447,7 +458,7 @@ func (s *Store) ResolveFunction(ctx context.Context, schema, name string) (*mode
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, errs.ErrNotFound
 		}
 		return nil, err
 	}

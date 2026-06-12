@@ -1,4 +1,4 @@
-package integration_test
+package httpdriver
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-// postgRESTMock simulates a minimal PostgREST-style HTTP API for http driver tests.
+// postgRESTMock simulates a minimal PostgREST-style HTTP API for driver tests.
 type postgRESTMock struct {
 	mu       sync.Mutex
 	requests []recordedHTTP
@@ -92,10 +92,6 @@ func (m *postgRESTMock) handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	if q.Get("total_amount") == "eq.99" {
 		writeJSON(w, []map[string]any{all[0]})
-		return
-	}
-	if q.Get("select") == "id,total_amount" {
-		writeJSON(w, all)
 		return
 	}
 	writeJSON(w, all)

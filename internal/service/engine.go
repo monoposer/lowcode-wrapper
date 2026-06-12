@@ -9,14 +9,14 @@ import (
 	"lowcode-wrapper/internal/logx"
 	"lowcode-wrapper/internal/models"
 	"lowcode-wrapper/internal/postgrest"
-	store "lowcode-wrapper/internal/store/postgres"
+	"lowcode-wrapper/internal/store"
 )
 
 type Engine struct {
-	Store *store.Store
+	Store store.Store
 }
 
-func NewEngine(s *store.Store) *Engine {
+func NewEngine(s store.Store) *Engine {
 	return &Engine{Store: s}
 }
 
