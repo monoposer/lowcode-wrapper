@@ -2,9 +2,9 @@ BINARY := bin/server
 MAIN   := ./cmd/server
 PORT   ?= 3020
 
-.PHONY: run start build clean check test e2e migrate migrate-up migrate-down docker-build docker-build-cli convert build-convert version version-next version-bump version-set compose-up compose-down postgres-up
+.PHONY: run start build clean check test e2e migrate migrate-up migrate-down docker-build docker-build-cli build-cli generate-types version version-next version-bump version-set compose-up compose-down postgres-up
 
-CONVERT_BINARY := bin/dataspan-convert
+CLI_BINARY := bin/dataspan
 CLI_IMAGE      ?= dataspan-cli:local
 IMAGE          ?= dataspan:local
 
@@ -32,7 +32,7 @@ clean:
 check:
 	go build -ldflags="$(LDFLAGS)" -o /dev/null $(MAIN)
 	go build -ldflags="$(LDFLAGS)" -o /dev/null ./cmd/migrate
-	go build -ldflags="$(LDFLAGS)" -o /dev/null ./cmd/convert
+	go build -ldflags="$(LDFLAGS)" -o /dev/null ./cmd/cli
 
 test:
 	go test ./...
@@ -71,10 +71,13 @@ compose-down:
 postgres-up:
 	docker compose -f deploy/docker-compose.yml up -d postgres
 
-build-convert convert:
+build-cli:
 	@mkdir -p bin
-	go build -ldflags="$(LDFLAGS)" -o $(CONVERT_BINARY) ./cmd/convert
-	@echo "built: $(CONVERT_BINARY)"
+	go build -ldflags="$(LDFLAGS)" -o $(CLI_BINARY) ./cmd/cli
+	@echo "built: $(CLI_BINARY)"
+
+generate-types: build-cli
+	$(CLI_BINARY) generate types --url http://localhost:$(PORT) $(ARGS)
 
 version:
 	@./scripts/version.sh show

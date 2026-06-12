@@ -35,9 +35,8 @@ func schemaFromRequest(r *http.Request) string {
 }
 
 // parseDataAPIResource resolves PostgREST-style paths:
-//   - /{table}           — schema from Accept-Profile / Content-Profile (default public)
-//   - /rpc/{function}    — RPC; schema from ?schema=, profile headers, or public
-//   - /{schema}/{table}  — legacy dataspan layout (still supported)
+//   - /{table}        — schema from Accept-Profile / Content-Profile (default public)
+//   - /rpc/{function} — RPC; schema from ?schema=, profile headers, or public
 func parseDataAPIResource(path string, r *http.Request) (dataAPIResource, bool) {
 	tail := strings.Trim(stripDataAPIPrefix(path), "/")
 	if tail == "" {
@@ -52,15 +51,14 @@ func parseDataAPIResource(path string, r *http.Request) (dataAPIResource, bool) 
 		}
 		return dataAPIResource{Schema: schemaFromRequest(r), Table: parts[0]}, true
 	case 2:
-		if parts[0] == "rpc" {
-			schema := strings.TrimSpace(r.URL.Query().Get("schema"))
-			if schema == "" {
-				schema = schemaFromRequest(r)
-			}
-			return dataAPIResource{Schema: schema, RPC: parts[1]}, true
+		if parts[0] != "rpc" {
+			return dataAPIResource{}, false
 		}
-		// Legacy: /{schema}/{table}
-		return dataAPIResource{Schema: parts[0], Table: parts[1]}, true
+		schema := strings.TrimSpace(r.URL.Query().Get("schema"))
+		if schema == "" {
+			schema = schemaFromRequest(r)
+		}
+		return dataAPIResource{Schema: schema, RPC: parts[1]}, true
 	default:
 		return dataAPIResource{}, false
 	}

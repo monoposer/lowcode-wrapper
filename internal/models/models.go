@@ -129,6 +129,34 @@ type ColumnInput struct {
 	Position   int    `json:"position,omitempty"`
 }
 
+type UpdateTableRequest struct {
+	RemoteName *string         `json:"remoteName,omitempty"`
+	KeyColumns []string        `json:"keyColumns,omitempty"`
+	Options    json.RawMessage `json:"options,omitempty"`
+}
+
+type CreateColumnRequest struct {
+	Name       string `json:"name"`
+	DataType   string `json:"dataType,omitempty"`
+	RemoteName string `json:"remoteName,omitempty"`
+	Nullable   *bool  `json:"nullable,omitempty"`
+	Position   int    `json:"position,omitempty"`
+}
+
+type UpdateColumnRequest struct {
+	DataType   *string `json:"dataType,omitempty"`
+	RemoteName *string `json:"remoteName,omitempty"`
+	Nullable   *bool   `json:"nullable,omitempty"`
+	Position   *int    `json:"position,omitempty"`
+}
+
+type UpdateFunctionRequest struct {
+	Operation  *string         `json:"operation,omitempty"`
+	RemotePath *string         `json:"remotePath,omitempty"`
+	Method     *string         `json:"method,omitempty"`
+	Options    json.RawMessage `json:"options,omitempty"`
+}
+
 type CreateTableRequest struct {
 	ServerName string        `json:"serverName"`
 	SchemaName string        `json:"schemaName,omitempty"`
@@ -158,12 +186,12 @@ type HTTPServerOptions struct {
 	Headers  map[string]string `json:"headers,omitempty"`
 }
 
-// HTTPTableOptions applies to wrapper_table.options when server protocol is http.
+// HTTPTableOptions applies to foreign_tables.options when server protocol is http.
 type HTTPTableOptions struct {
 	Headers map[string]string `json:"headers,omitempty"`
 }
 
-// HTTPFunctionOptions applies to wrapper_function.options for http invoke.
+// HTTPFunctionOptions applies to foreign_functions.options for http invoke.
 type HTTPFunctionOptions struct {
 	Headers map[string]string `json:"headers,omitempty"`
 }

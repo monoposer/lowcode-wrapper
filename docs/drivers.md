@@ -1,6 +1,6 @@
 # Protocol drivers
 
-Drivers adapt **remote data sources** to the unified API. After registering `wrapper_server.protocol` via Admin API, the engine instantiates the driver with `driver.New(protocol)`.
+Drivers adapt **remote data sources** to the unified API. After registering `servers.protocol` via Admin API, the engine instantiates the driver with `driver.New(protocol)`.
 
 Registry: `internal/driver/registry.go` (each driver calls `driver.Register` in `init()`).
 
@@ -146,7 +146,7 @@ Large files are read fully into memory — use `limit` in production.
 2. `init()` → `driver.Register(models.ProtocolXxx, New)`
 3. Blank import in `cmd/server/main.go`: `_ "github.com/monoposer/dataspan/internal/driver/<name>"`
 4. For REST-only differences, **prefer `httpwrap`** instead of duplicating CRUD
-5. Update `wrapper_server.protocol` CHECK in `scripts/migrations/init.up.sql`
+5. Add `models.ProtocolXxx` constant in `internal/models/models.go`
 6. Add tests (see `http`, `file`)
 
 ## Driver interface

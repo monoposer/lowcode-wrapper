@@ -9,9 +9,9 @@ Go HTTP sidecar, `net/http` + JSON, **no gRPC**.
 
 ## Metadata store
 
-- `WRAPPER_STORE_MODE=postgres|file` — where metadata is **read from**
-- **postgres**: Meta DB (`.env` `DATABASE_*`) + Admin API + `make migrate` (`scripts/migrations/init.up.sql`)
-- **file**: [`drivers.yaml`](../drivers.yaml.example) — `servers` / `tables` / `functions`; credentials **inline** on `servers[].credential` (not top-level); in-memory model matches postgres after load
+- `WRAPPER_STORE_MODE=db|file` — where metadata is **read from** (`postgres` is a legacy alias for `db`)
+- **db**: Meta DB via DSN (`.env` `DATABASE_URL` / `DATABASE_DSN`) + Admin API + `make migrate` (GORM AutoMigrate from `internal/models/entities.go`)
+- **file**: [`drivers.yaml`](../drivers.yaml.example) — `servers` / `tables` / `functions`; credentials **inline** on `servers[].credential` (not top-level); in-memory model matches db store after load
 - Meta DB connection lives **only in `.env`**, not in yaml
 
 ## Data plane

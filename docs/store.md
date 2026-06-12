@@ -1,22 +1,42 @@
 # Meta store
 
-`WRAPPER_STORE_MODE` controls **where Foreign Server / Table metadata is read from**. Meta DB connection settings live only in `.env` (`DATABASE_*`), not in YAML.
+`WRAPPER_STORE_MODE` controls **where Foreign Server / Table metadata is read from**. Meta DB connection is **DSN only** in `.env` (`DATABASE_URL` or `DATABASE_DSN`), not in YAML.
 
 | Mode | Metadata source | Configuration |
 |------|-----------------|---------------|
-| `postgres` (default) | PostgreSQL | Admin API + `make migrate` |
+| `db` (default) | SQL database (postgres / mysql / sqlite) | Admin API + `make migrate` (GORM AutoMigrate) |
 | `file` | `drivers.yaml` | Declarative YAML (credentials inline on `servers`) |
 
 ```bash
-WRAPPER_STORE_MODE=postgres|file
+WRAPPER_STORE_MODE=db|file
 WRAPPER_DRIVERS_FILE=./drivers.yaml   # file mode, default ./drivers.yaml
 ```
 
-Postgres mode: `DATABASE_HOST` / `DATABASE_PASSWORD` in `.env`, or `DATABASE_URL`.
+Legacy alias: `WRAPPER_STORE_MODE=postgres` → `db`.
+
+DB mode examples:
+
+```bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/dataspan_meta?sslmode=disable
+# DATABASE_DSN=mysql://user:pass@tcp(localhost:3306)/dataspan_meta
+# DATABASE_DSN=file:./dataspan_meta.db
+```
+
+## Meta DB tables (db mode)
+
+GORM models in `internal/models/entities.go` drive schema via `make migrate`:
+
+| Entity | Table |
+|--------|-------|
+| `MetaCredential` | `credentials` |
+| `MetaServer` | `servers` |
+| `MetaForeignTable` | `foreign_tables` |
+| `MetaForeignColumn` | `foreign_columns` |
+| `MetaForeignFunction` | `foreign_functions` |
 
 ## drivers.yaml (file mode)
 
-On disk the shape differs from postgres tables; after `compileDeclarative` the in-memory model matches the postgres store (`Server` + `CredentialRef` + encrypted payload).
+On disk the shape differs from DB tables; after `compileDeclarative` the in-memory model matches db store (`Server` + `CredentialRef` + encrypted payload).
 
 ```yaml
 servers:
@@ -35,8 +55,8 @@ tables:
 
 | Persistence | On disk | In memory |
 |-------------|---------|-----------|
-| postgres | `wrapper_credential` + `wrapper_server` + … | `models.Server` + `CredentialRef` |
-| file | `servers` + `tables` + `functions` | same as postgres |
+| db | `credentials` + `servers` + `foreign_*` | `models.Server` + `CredentialRef` |
+| file | `servers` + `tables` + `functions` | same as db |
 
 Use top-level `credentials` + `credential: name` only when multiple servers share one secret (see [`drivers.yaml.example`](../drivers.yaml.example)).
 
@@ -44,8 +64,8 @@ Use top-level `credentials` + `credential: name` only when multiple servers shar
 
 | Secret | Location |
 |--------|----------|
-| Meta DB password | `.env` `DATABASE_*` |
+| Meta DB DSN | `.env` `DATABASE_URL` / `DATABASE_DSN` |
 | Foreign credentials | `servers[].credential` or Admin API; prefer `${ENV_VAR}` |
 | `DATASPAN_VAULT_KEY` | `.env` only |
 
-Implementation: `internal/store/postgres/`, `internal/store/file/`.
+Implementation: `internal/store/db/` (GORM), `internal/store/file/`.

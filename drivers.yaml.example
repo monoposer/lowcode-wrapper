@@ -2,11 +2,11 @@
 # cp drivers.yaml.example drivers.yaml
 #
 # WRAPPER_STORE_MODE=file loads metadata from this file.
-# WRAPPER_STORE_MODE=postgres uses Meta DB tables + Admin API instead.
+# WRAPPER_STORE_MODE=db uses Meta DB (GORM) + Admin API instead.
 #
-# On-disk shapes differ; after load the in-memory model matches postgres store:
+# On-disk shapes differ; after load the in-memory model matches db store:
 #   file YAML: servers (inline credential) + tables + functions
-#   postgres:  wrapper_credential + wrapper_server + wrapper_table + ...
+#   db:        credentials + servers + foreign_tables + ...
 #
 # WRAPPER_DRIVERS_FILE=./drivers.yaml
 

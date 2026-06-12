@@ -5,22 +5,22 @@ Architecture, driver groups, and store modes: [docs/](../docs/README.md). This f
 ## Environment variables
 
 ```bash
-cp .env.example .env          # DATASPAN_VAULT_KEY, DATABASE_*
+cp .env.example .env          # DATASPAN_VAULT_KEY, DATABASE_URL
 cp drivers.yaml.example drivers.yaml   # only when WRAPPER_STORE_MODE=file
 ```
 
 | Variable | Description |
 |----------|-------------|
-| `WRAPPER_STORE_MODE` | `postgres` (default) or `file` |
+| `WRAPPER_STORE_MODE` | `db` (default) or `file` (`postgres` is legacy alias for `db`) |
 | `WRAPPER_DRIVERS_FILE` | file mode path, default `./drivers.yaml` |
-| `DATABASE_*` | postgres mode Meta DB (`.env` only) |
+| `DATABASE_URL` / `DATABASE_DSN` | db mode Meta DB DSN (postgres / mysql / sqlite) |
 | `DATASPAN_VAULT_KEY` | credential encryption master key |
 
 ## Start
 
 ```bash
-make postgres-up                # postgres mode (deploy/docker-compose.yml)
-make migrate                    # postgres mode, first run or schema change
+make postgres-up                # db mode with compose postgres service
+make migrate                    # db mode, GORM AutoMigrate
 make run                        # :3020
 make test
 ```
@@ -29,7 +29,7 @@ File mode: `WRAPPER_STORE_MODE=file make run` (no postgres / migrate).
 
 Driver tests: `go test ./internal/driver/http/... ./internal/driver/file/... -v`
 
-## Admin API examples (postgres mode)
+## Admin API examples (db mode)
 
 ```bash
 BASE=http://localhost:3020
@@ -101,8 +101,8 @@ Merging to `main` tags `v$(cat VERSION)` and triggers GitHub Release (convert CL
 
 ## Migrations
 
-- DDL: `scripts/migrations/init.up.sql`
-- `make migrate` / `make migrate-down` (postgres store only)
+- Schema: GORM models in `internal/models/entities.go`
+- `make migrate` / `make migrate-down` (db store only; requires `DATABASE_URL` or `DATABASE_DSN`)
 - Server does not auto-migrate on startup
 
 ## Common pitfalls

@@ -32,8 +32,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       -X github.com/monoposer/dataspan/internal/version.Version=${VERSION} \
       -X github.com/monoposer/dataspan/internal/version.Commit=${GIT_COMMIT} \
       -X github.com/monoposer/dataspan/internal/version.BuildDate=${BUILD_DATE}" \
-    -o /out/dataspan-convert ./cmd/convert
+    -o /out/dataspan ./cmd/cli
 
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/dataspan-convert /dataspan-convert
-ENTRYPOINT ["/dataspan-convert"]
+COPY --from=build /out/dataspan /dataspan
+ENTRYPOINT ["/dataspan"]

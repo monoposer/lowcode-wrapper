@@ -35,7 +35,7 @@ func TestSchemaFromRequest(t *testing.T) {
 }
 
 func TestParseDataAPIResource(t *testing.T) {
-	req := func(method, accept, content string) *http.Request {
+	reqWithProfile := func(method, accept, content string) *http.Request {
 		r := httptest.NewRequest(method, "/rest/v1/items", nil)
 		if accept != "" {
 			r.Header.Set("Accept-Profile", accept)
@@ -44,6 +44,9 @@ func TestParseDataAPIResource(t *testing.T) {
 			r.Header.Set("Content-Profile", content)
 		}
 		return r
+	}
+	req := func(method, accept, content string) *http.Request {
+		return reqWithProfile(method, accept, content)
 	}
 
 	cases := []struct {
@@ -56,9 +59,10 @@ func TestParseDataAPIResource(t *testing.T) {
 	}{
 		{"/rest/v1/items", req("GET", "public", ""), true, "public", "items", ""},
 		{"/v1/orders", req("GET", "", ""), true, "public", "orders", ""},
-		{"/rest/v1/public/items", req("GET", "", ""), true, "public", "items", ""},
-		{"/rest/v1/analytics/events", req("GET", "", ""), true, "analytics", "events", ""},
+		{"/rest/v1/public/items", req("GET", "", ""), false, "", "", ""},
+		{"/rest/v1/events", req("GET", "analytics", ""), true, "analytics", "events", ""},
 		{"/rest/v1/rpc/create_order", httptest.NewRequest("POST", "/rest/v1/rpc/create_order", nil), true, "public", "", "create_order"},
+		{"/rest/v1/foreign_tables", reqWithProfile("GET", "pg_catalog", ""), true, "pg_catalog", "foreign_tables", ""},
 		{"/rest/v1/", req("GET", "", ""), false, "", "", ""},
 		{"/rest/v1/a/b/c", req("GET", "", ""), false, "", "", ""},
 	}

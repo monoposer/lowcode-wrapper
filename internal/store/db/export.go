@@ -1,4 +1,4 @@
-package postgres
+package db
 
 import (
 	"context"
@@ -94,7 +94,7 @@ func (s *Store) exportDeclarative(ctx context.Context) (importer.DeclarativeDoc,
 			Server:     fn.ServerName,
 			Schema:     fn.SchemaName,
 			Name:       fn.Name,
-			Operation:  string(fn.Operation),
+			Operation:  fn.Operation,
 			RemotePath: fn.RemotePath,
 			Method:     fn.Method,
 		}

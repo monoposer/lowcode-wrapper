@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/monoposer/dataspan/internal/importer"
+	"github.com/monoposer/dataspan/internal/store/db"
 	"github.com/monoposer/dataspan/internal/store/file"
-	"github.com/monoposer/dataspan/internal/store/postgres"
 )
 
 type Importer interface {
@@ -18,7 +18,7 @@ func ImportDeclarative(ctx context.Context, s Store, doc importer.DeclarativeDoc
 	switch st := s.(type) {
 	case *file.Store:
 		return st.ImportDeclarative(ctx, doc, mode)
-	case *postgres.Store:
+	case *db.Store:
 		return st.ImportDeclarative(ctx, doc, mode)
 	default:
 		return importer.Result{}, fmt.Errorf("import not supported for this store backend")

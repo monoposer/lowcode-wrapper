@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/monoposer/dataspan/internal/logx"
 	"github.com/monoposer/dataspan/internal/migrate"
@@ -17,9 +18,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: %s up|down\n", os.Args[0])
 		os.Exit(2)
 	}
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if dsn == "" {
-		slog.Error("DATABASE_URL is required")
+		dsn = strings.TrimSpace(os.Getenv("DATABASE_DSN"))
+	}
+	if dsn == "" {
+		slog.Error("DATABASE_URL or DATABASE_DSN is required")
 		os.Exit(1)
 	}
 

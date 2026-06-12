@@ -29,9 +29,9 @@ func (h *AdminHandler) importMetadata(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	if cfg.Mode != store.ModePostgres {
+	if cfg.Mode != store.ModeDB {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "import API is only available when WRAPPER_STORE_MODE=postgres",
+			"error": "import API is only available when WRAPPER_STORE_MODE=db",
 		})
 		return
 	}

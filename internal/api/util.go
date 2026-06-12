@@ -11,7 +11,11 @@ import (
 )
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
+	writeJSONContentType(w, status, "application/json", v)
+}
+
+func writeJSONContentType(w http.ResponseWriter, status int, contentType string, v any) {
+	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }

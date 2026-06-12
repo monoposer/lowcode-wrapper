@@ -2,6 +2,7 @@
 
 | Doc | Contents |
 |-----|----------|
+| [技术架构.md](技术架构.md) | **完整项目架构**（中文：分层、元数据、API、Driver、OpenAPI） |
 | [architecture.md](architecture.md) | Request flow, layout, column mapping |
 | [store.md](store.md) | postgres vs file, `drivers.yaml` |
 | [drivers.md](drivers.md) | Protocol groups, selection guide, extending drivers |

@@ -16,11 +16,22 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Mode != store.ModePostgres {
-		t.Fatalf("mode = %q, want postgres", cfg.Mode)
+	if cfg.Mode != store.ModeDB {
+		t.Fatalf("mode = %q, want db", cfg.Mode)
 	}
 	if cfg.File.Path != "./drivers.yaml" {
 		t.Fatalf("drivers file = %q", cfg.File.Path)
+	}
+}
+
+func TestLoadConfigLegacyPostgresMode(t *testing.T) {
+	t.Setenv("WRAPPER_STORE_MODE", "postgres")
+	cfg, err := store.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Mode != store.ModeDB {
+		t.Fatalf("mode = %q, want db", cfg.Mode)
 	}
 }
 
@@ -60,7 +71,7 @@ func TestLoadConfigIgnoresMissingYAML(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Mode != store.ModePostgres {
+	if cfg.Mode != store.ModeDB {
 		t.Fatalf("mode = %q", cfg.Mode)
 	}
 }

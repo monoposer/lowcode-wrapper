@@ -1,8 +1,8 @@
-# Binaries（make build → bin/server）
+# Binaries（make build → bin/server, make build-cli → bin/dataspan）
 bin/
 /bin/
+/server
 /dataspan
-/bin/
 *.exe
 *.exe~
 *.dll

@@ -2,19 +2,14 @@ package api
 
 import (
 	"embed"
-	"io/fs"
 	"net/http"
 )
 
 //go:embed openapi/*
 var openAPIFS embed.FS
 
+// RegisterOpenAPI serves Swagger UI for the runtime Data API OpenAPI (GET /rest/v1/).
 func RegisterOpenAPI(mux *http.ServeMux) {
-	sub, _ := fs.Sub(openAPIFS, "openapi")
-	mux.Handle("/openapi/", http.StripPrefix("/openapi/", http.FileServer(http.FS(sub))))
-	mux.HandleFunc("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/openapi/openapi.yaml", http.StatusMovedPermanently)
-	})
 	mux.HandleFunc("/swagger", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
 	})

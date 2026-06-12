@@ -2,6 +2,8 @@
 
 PostgREST-style **sidecar** (not a PostgreSQL FDW extension): metadata store, encrypted credentials, and a unified `/v1/...` data plane.
 
+**Full architecture (Chinese)**: [技术架构.md](技术架构.md)
+
 ## Request flow
 
 ```
@@ -13,7 +15,9 @@ Client → /rest/v1/{table} (Accept-Profile / Content-Profile) | /rest/v1/rpc/{f
   → internal/driver/*
 ```
 
-## Metadata registration (postgres mode / Admin API)
+Schema introspection: Admin API (`/api/servers`, `/api/tables`, …). OpenAPI: `GET /` or `/rest/v1/` → `internal/postgrest/openapi.go`.
+
+## Metadata registration (db mode / Admin API)
 
 ```
 POST /api/servers → POST /api/tables → (optional) POST /api/functions
@@ -25,7 +29,7 @@ File mode: edit [`drivers.yaml`](../drivers.yaml.example); see [store.md](store.
 
 | Layer | Packages |
 |-------|----------|
-| Entry | `cmd/server`, `cmd/migrate`, `cmd/convert` |
+| Entry | `cmd/server`, `cmd/migrate`, `cmd/cli` |
 | HTTP | `internal/api` |
 | Orchestration | `internal/service` |
 | Query | `internal/postgrest` |

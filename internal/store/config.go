@@ -4,26 +4,25 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/monoposer/dataspan/internal/auth"
 
+	"github.com/monoposer/dataspan/internal/store/db"
 	"github.com/monoposer/dataspan/internal/store/file"
-	"github.com/monoposer/dataspan/internal/store/postgres"
 )
 
 type Mode string
 
 const (
-	ModePostgres Mode = "postgres"
-	ModeFile     Mode = "file"
+	ModeDB   Mode = "db"
+	ModeFile Mode = "file"
 
 	defaultDriversFile = "./drivers.yaml"
 )
 
 // Config selects where Foreign Server / Table metadata is loaded from.
-// - postgres: Meta DB (Admin API / DATABASE_*)
+// - db: Meta DB (DATABASE_URL / DATABASE_DSN) + Admin API
 // - file: declarative drivers.yaml
 type Config struct {
 	Mode Mode
@@ -31,10 +30,14 @@ type Config struct {
 }
 
 func LoadConfig() (Config, error) {
-	cfg := Config{Mode: ModePostgres}
+	cfg := Config{Mode: ModeDB}
 
 	if mode := strings.TrimSpace(os.Getenv("WRAPPER_STORE_MODE")); mode != "" {
-		cfg.Mode = Mode(strings.ToLower(mode))
+		mode = strings.ToLower(mode)
+		if mode == "postgres" {
+			mode = "db" // legacy alias
+		}
+		cfg.Mode = Mode(mode)
 	}
 	path := strings.TrimSpace(os.Getenv("WRAPPER_DRIVERS_FILE"))
 	if path == "" {
@@ -46,57 +49,23 @@ func LoadConfig() (Config, error) {
 	cfg.File.Path = path // file path or directory of *.yaml / *.yml
 
 	switch cfg.Mode {
-	case ModePostgres, ModeFile:
+	case ModeDB, ModeFile:
 	default:
-		return Config{}, fmt.Errorf("unsupported store mode %q (use postgres or file)", cfg.Mode)
+		return Config{}, fmt.Errorf("unsupported store mode %q (use db or file)", cfg.Mode)
 	}
 	return cfg, nil
-}
-
-func postgresConfigFromEnv() postgres.Config {
-	cfg := postgres.Config{}
-	if v := envFirst("DATABASE_URL"); v != "" {
-		cfg.DSN = v
-		return cfg
-	}
-	if v := envFirst("DATABASE_HOST", "WRAPPER_STORE_PG_HOST"); v != "" {
-		cfg.Host = v
-	}
-	if v := envFirst("DATABASE_PORT", "WRAPPER_STORE_PG_PORT"); v != "" {
-		if port, err := strconv.Atoi(v); err == nil {
-			cfg.Port = port
-		}
-	}
-	if v := envFirst("DATABASE_USER", "WRAPPER_STORE_PG_USER"); v != "" {
-		cfg.Username = v
-	}
-	if v := envFirst("DATABASE_PASSWORD", "WRAPPER_STORE_PG_PASSWORD"); v != "" {
-		cfg.Password = v
-	}
-	if v := envFirst("DATABASE_NAME", "WRAPPER_STORE_PG_DATABASE"); v != "" {
-		cfg.Database = v
-	}
-	if v := envFirst("DATABASE_SSLMODE", "WRAPPER_STORE_PG_SSLMODE"); v != "" {
-		cfg.SSLMode = v
-	}
-	return cfg
-}
-
-func envFirst(keys ...string) string {
-	for _, k := range keys {
-		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
-			return v
-		}
-	}
-	return ""
 }
 
 func New(vault *auth.Vault, cfg Config) (Store, error) {
 	switch cfg.Mode {
 	case ModeFile:
 		return file.New(vault, cfg.File)
-	case ModePostgres:
-		return postgres.New(vault, postgresConfigFromEnv())
+	case ModeDB:
+		dbCfg, err := db.ConfigFromEnv()
+		if err != nil {
+			return nil, err
+		}
+		return db.New(vault, dbCfg)
 	default:
 		return nil, fmt.Errorf("unsupported store mode %q", cfg.Mode)
 	}
@@ -114,8 +83,12 @@ func Ping(ctx context.Context, cfg Config) error {
 	switch cfg.Mode {
 	case ModeFile:
 		return file.Ping(cfg.File)
-	case ModePostgres:
-		return postgres.Ping(ctx, postgresConfigFromEnv())
+	case ModeDB:
+		dbCfg, err := db.ConfigFromEnv()
+		if err != nil {
+			return err
+		}
+		return db.Ping(ctx, dbCfg)
 	default:
 		return fmt.Errorf("unsupported store mode %q", cfg.Mode)
 	}

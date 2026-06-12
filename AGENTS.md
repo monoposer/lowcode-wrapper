@@ -5,9 +5,9 @@ PostgREST-style sidecar: `/rest/v1/{table}` CRUD + `/rest/v1/rpc/{fn}` across mu
 ## Quick start
 
 1. `cp .env.example .env` → set `DATASPAN_VAULT_KEY` (`openssl rand -base64 32`)
-2. **postgres mode**: `make postgres-up` → `make migrate` → `make run`
+2. **db mode**: `make postgres-up` → `make migrate` → `make run`
 3. **file mode**: `WRAPPER_STORE_MODE=file` + `cp drivers.yaml.example drivers.yaml` → `make run`
-4. http://localhost:3020/swagger/ · `GET /health`
+4. http://localhost:3020/swagger/（动态 OpenAPI）· `GET /health`
 
 ## Doc map (do not duplicate long content here)
 
@@ -23,6 +23,6 @@ For details, `@docs/drivers.md` or `@docs/store.md` — do not copy long section
 
 ## Common touch points
 
-- New protocol → driver package + `cmd/server` import + `init.up.sql` CHECK
-- Metadata schema → `scripts/migrations/init.up.sql`
+- New protocol → driver package + `cmd/server` import + `models.Protocol` constant
+- Metadata schema → `internal/models/entities.go` + `make migrate`
 - Dual store modes → `internal/store/config.go`, `internal/store/file/declarative.go`

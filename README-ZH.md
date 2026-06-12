@@ -15,7 +15,7 @@ cp .env.example .env          # DATASPAN_VAULT_KEY=$(openssl rand -base64 32)
 make postgres-up && make migrate && make run
 ```
 
-- Swagger：http://localhost:3020/swagger/
+- Swagger UI（动态 OpenAPI）：http://localhost:3020/swagger/
 
 Docker 全栈部署见 [deploy/](deploy/README.md)（`make compose-up`）。
 

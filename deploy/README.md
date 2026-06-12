@@ -5,7 +5,7 @@ All Docker-related files live in this directory. Build context is always the **r
 | File | Purpose |
 |------|---------|
 | `Dockerfile` | Server image |
-| `Dockerfile.cli` | Convert CLI image |
+| `Dockerfile.cli` | CLI image (`import`, `generate types`) |
 | `docker-compose.yml` | Postgres Meta DB + dataspan server (build from source) |
 
 ## Quick start
@@ -49,7 +49,7 @@ Uncomment the `volumes` section in `docker-compose.yml` to mount `drivers.yaml`.
 | Variable | Notes |
 |----------|-------|
 | `DATASPAN_VAULT_KEY` | 32-byte base64 AES key; **required** |
-| `DATABASE_URL` or `DATABASE_*` | postgres store mode only |
+| `DATABASE_URL` or `DATABASE_DSN` | db store mode only |
 | Foreign API keys | In `drivers.yaml` or via Admin API |
 
 ## Health check

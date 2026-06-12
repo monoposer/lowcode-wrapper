@@ -3,7 +3,6 @@ package api
 import (
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/monoposer/dataspan/internal/logx"
@@ -26,7 +25,7 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 	return r.ResponseWriter.Write(b)
 }
 
-// Logging records HTTP requests (skips OpenAPI/Swagger static assets).
+// Logging records HTTP requests (skips Swagger UI page).
 func Logging(next http.Handler) http.Handler {
 	log := logx.Component("http")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +66,5 @@ func Logging(next http.Handler) http.Handler {
 }
 
 func skipRequestLog(path string) bool {
-	return strings.HasPrefix(path, "/openapi/") ||
-		path == "/swagger/" || path == "/swagger" || path == "/docs"
+	return path == "/swagger/" || path == "/swagger" || path == "/docs"
 }

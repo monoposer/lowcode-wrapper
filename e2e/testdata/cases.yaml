@@ -26,9 +26,11 @@ cases:
       - id: "1"
         name: alpha
 
-  - name: legacy schema path
+  - name: select by id
     method: GET
-    path: /rest/v1/public/items
+    path: /rest/v1/items
+    headers:
+      Accept-Profile: public
     query: id=eq.2
     status: 200
     json:

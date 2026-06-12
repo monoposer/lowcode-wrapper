@@ -41,7 +41,7 @@ jobs:
             echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build convert binary
+      - name: Build CLI binary
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -49,20 +49,20 @@ jobs:
         run: |
           ext=""
           if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
-          out="dist/dataspan-convert-${GOOS}-${GOARCH}${ext}"
+          out="dist/dataspan-${GOOS}-${GOARCH}${ext}"
           mkdir -p dist
           CGO_ENABLED=0 go build -trimpath \
             -ldflags="-s -w \
               -X github.com/monoposer/dataspan/internal/version.Version=${VERSION} \
               -X github.com/monoposer/dataspan/internal/version.Commit=${GITHUB_SHA:0:7} \
               -X github.com/monoposer/dataspan/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -o "$out" ./cmd/convert
+            -o "$out" ./cmd/cli
           if [ "$GOOS" != "windows" ]; then chmod +x "$out"; fi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dataspan-convert-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/dataspan-convert-*
+          name: dataspan-cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/dataspan-*
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

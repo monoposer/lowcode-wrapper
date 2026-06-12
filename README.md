@@ -15,7 +15,7 @@ cp .env.example .env          # DATASPAN_VAULT_KEY=$(openssl rand -base64 32)
 make postgres-up && make migrate && make run
 ```
 
-Open http://localhost:3020/swagger/
+Open http://localhost:3020/swagger/ (runtime Data API OpenAPI from `GET /rest/v1/`)
 
 Run everything in Docker: [deploy/](deploy/README.md) (`make compose-up`).
 
