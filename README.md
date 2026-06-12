@@ -1,88 +1,57 @@
 # dataspan
 
-A lightweight sidecar that exposes heterogeneous data sources through one PostgREST-compatible REST surface.
+**One PostgREST-compatible API over heterogeneous data sources.**
 
-Register foreign servers and tables (PostgreSQL metadata or declarative YAML), then query remote HTTP, Postgres, MySQL, MongoDB, Redis, S3, or local files via `/v1/{schema}/{table}` CRUD and `/v1/rpc/{fn}`.
+Register foreign servers and tables once (PostgreSQL metadata or `drivers.yaml`), then query HTTP APIs, databases, object storage, or local files through the same REST surface your frontend already knows — filters (`id=eq.1`), `select`, `order`, `limit`, RPC, and PostgREST error codes.
 
-Repository: [github.com/monoposer/dataspan](https://github.com/monoposer/dataspan)
+```
+Client  →  /v1/{schema}/{table}  →  driver  →  remote source
+```
 
 ## Quick start
 
 ```bash
-cp .env.example .env
-# Set WRAPPER_MASTER_KEY: openssl rand -base64 32
-make postgres-up
-make migrate
-make run
+cp .env.example .env          # DATASPAN_VAULT_KEY=$(openssl rand -base64 32)
+make postgres-up && make migrate && make run
 ```
 
-Playground UI: http://localhost:3020/playground/
+Open http://localhost:3020/swagger/
 
-API docs (OpenAPI + Swagger UI): http://localhost:3020/swagger/ — spec at `/openapi/openapi.yaml`
+Run everything in Docker: [deploy/](deploy/README.md) (`make compose-up`).
 
-Health check: `GET /health` returns `{"status":"ok","version":"..."}`.
+## Data API
 
-## Docker
+| Method | Path | Example |
+|--------|------|---------|
+| GET | `/v1/{schema}/{table}` | `?id=eq.1&select=id,name&limit=10` |
+| POST | `/v1/{schema}/{table}` | insert row |
+| PATCH | `/v1/{schema}/{table}` | `?id=eq.1` + JSON body |
+| DELETE | `/v1/{schema}/{table}` | `?id=eq.1` |
+| POST | `/v1/rpc/{function}` | remote procedure |
 
-```bash
-# Build minimal server image (~15–20MB, distroless + static binary)
-make docker-build IMAGE=monoposer/dataspan:latest
+`/rest/v1/` is an alias for [Supabase JS](https://supabase.com/docs/reference/javascript) and other PostgREST clients.
 
-# Build convert CLI image
-make docker-build-cli CLI_IMAGE=monoposer/dataspan-cli:latest
+Set `DATASPAN_ANON_KEY` to require `apikey` + `Authorization: Bearer` on the data API (optional JWT via `DATASPAN_JWT_SECRET`). No row-level security — gateway auth only.
 
-# Full local stack (postgres + server)
-cp .env.example .env   # set WRAPPER_MASTER_KEY
-make compose-up
-```
-
-Published images (on version tags): `monoposer/dataspan` and `monoposer/dataspan-cli` on Docker Hub.
+Errors follow the PostgREST shape (`code`, `message`, `details`, `hint`) — e.g. `PGRST205` when a table is not registered, `PGRST301` for auth failures.
 
 ## Admin API
 
-- `POST /api/credentials` — store encrypted secrets
-- `POST /api/servers` — register foreign server (`http`|`postgres`|`mysql`|`file`|`mongo`|`redis`|`s3`|`notion`|`firebase`|`airtable`|`sheets`)
-- `POST /api/tables` — register foreign table + columns
-- `POST /api/functions` — register RPC mapping
+Register metadata before querying the data API:
 
-## Data API (PostgREST-like)
+- `POST /api/credentials` — encrypted secrets
+- `POST /api/servers` — foreign server + protocol
+- `POST /api/tables` — table + column mapping (`name` → `remote_name`)
+- `POST /api/functions` — RPC mapping
 
-- `GET /v1/{schema}/{table}?col=eq.val&select=a,b&limit=10`
-- `POST /v1/{schema}/{table}`
-- `PATCH /v1/{schema}/{table}?id=eq.1`
-- `DELETE /v1/{schema}/{table}?id=eq.1`
-- `POST /v1/rpc/{function}`
+Protocols: `http`, `postgres`, `mysql`, `mongo`, `redis`, `s3`, `file`, and SaaS presets (`notion`, `firebase`, `airtable`, `sheets`). See [docs/drivers.md](docs/drivers.md).
 
-## Documentation
+## Learn more
 
-| Doc | Description |
-|-----|-------------|
-| [docs/](docs/README.md) | Architecture, store modes, drivers, module map |
-| [deploy/](deploy/README.md) | Production deployment examples |
-| [.cursor/DEVELOPMENT.md](.cursor/DEVELOPMENT.md) | Local env, curl, make targets |
-| [AGENTS.md](AGENTS.md) | Cursor agent entry point |
-| [readme-zh.md](readme-zh.md) | 中文说明 |
-
-## Versioning
-
-Current release: see [VERSION](VERSION).
-
-Local version helpers:
-
-```bash
-make version              # current
-make version-next         # next CI release
-make version-bump         # bump patch in VERSION
-make version-bump BUMP=minor
-make version-set VER=1.0.0
-```
-
-Merging to `main` automatically bumps the patch version, updates `VERSION`, and pushes a `v*` tag. That tag triggers:
-
-- GitHub Release with `dataspan-convert` binaries
-- Docker images `monoposer/dataspan` and `monoposer/dataspan-cli` on Docker Hub
-
-Requires repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
+| | |
+|-|-|
+| [docs/](docs/README.md) | Architecture, store modes, drivers |
+| [deploy/](deploy/README.md) | Docker images & compose |
 
 ## License
 

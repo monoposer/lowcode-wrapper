@@ -13,8 +13,8 @@ func TestVaultEncryptDecrypt(t *testing.T) {
 	for i := range key {
 		key[i] = byte(i)
 	}
-	os.Setenv("WRAPPER_MASTER_KEY", base64.StdEncoding.EncodeToString(key))
-	t.Cleanup(func() { os.Unsetenv("WRAPPER_MASTER_KEY") })
+	os.Setenv(auth.EnvVaultKey, base64.StdEncoding.EncodeToString(key))
+	t.Cleanup(func() { os.Unsetenv(auth.EnvVaultKey) })
 
 	v, err := auth.NewVaultFromEnv()
 	if err != nil {

@@ -2,7 +2,7 @@ BINARY := bin/server
 MAIN   := ./cmd/server
 PORT   ?= 3020
 
-.PHONY: run start build clean check test migrate migrate-up migrate-down docker-build docker-build-cli convert build-convert version version-next version-bump version-set compose-up compose-down postgres-up
+.PHONY: run start build clean check test e2e migrate migrate-up migrate-down docker-build docker-build-cli convert build-convert version version-next version-bump version-set compose-up compose-down postgres-up
 
 CONVERT_BINARY := bin/dataspan-convert
 CLI_IMAGE      ?= dataspan-cli:local
@@ -36,6 +36,9 @@ check:
 
 test:
 	go test ./...
+
+e2e:
+	go test ./e2e/ -v
 
 migrate migrate-up:
 	@if [ -f .env ]; then set -a && . ./.env && set +a; fi; go run ./cmd/migrate up

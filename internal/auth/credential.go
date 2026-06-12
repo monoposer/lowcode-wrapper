@@ -10,25 +10,29 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
-var ErrMasterKeyMissing = errors.New("WRAPPER_MASTER_KEY is required")
+// EnvVaultKey encrypts foreign credentials at rest (AES-256-GCM). Not the data-plane apikey.
+const EnvVaultKey = "DATASPAN_VAULT_KEY"
+
+var ErrVaultKeyMissing = errors.New("DATASPAN_VAULT_KEY is required")
 
 type Vault struct {
 	aead cipher.AEAD
 }
 
 func NewVaultFromEnv() (*Vault, error) {
-	keyB64 := os.Getenv("WRAPPER_MASTER_KEY")
+	keyB64 := strings.TrimSpace(os.Getenv(EnvVaultKey))
 	if keyB64 == "" {
-		return nil, ErrMasterKeyMissing
+		return nil, ErrVaultKeyMissing
 	}
 	key, err := base64.StdEncoding.DecodeString(keyB64)
 	if err != nil {
-		return nil, fmt.Errorf("decode WRAPPER_MASTER_KEY: %w", err)
+		return nil, fmt.Errorf("decode %s: %w", EnvVaultKey, err)
 	}
 	if len(key) != 32 {
-		return nil, fmt.Errorf("WRAPPER_MASTER_KEY must decode to 32 bytes, got %d", len(key))
+		return nil, fmt.Errorf("%s must decode to 32 bytes, got %d", EnvVaultKey, len(key))
 	}
 	block, err := aes.NewCipher(key)
 	if err != nil {

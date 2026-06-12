@@ -4,10 +4,10 @@ PostgREST-style sidecar: `/v1/{schema}/{table}` CRUD + `/v1/rpc/{fn}` across mul
 
 ## Quick start
 
-1. `cp .env.example .env` → set `WRAPPER_MASTER_KEY` (`openssl rand -base64 32`)
+1. `cp .env.example .env` → set `DATASPAN_VAULT_KEY` (`openssl rand -base64 32`)
 2. **postgres mode**: `make postgres-up` → `make migrate` → `make run`
 3. **file mode**: `WRAPPER_STORE_MODE=file` + `cp drivers.yaml.example drivers.yaml` → `make run`
-4. http://localhost:3020/playground/ · `/swagger/` · `GET /health`
+4. http://localhost:3020/swagger/ · `GET /health`
 
 ## Doc map (do not duplicate long content here)
 

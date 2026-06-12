@@ -1,96 +1,54 @@
 # dataspan
 
-轻量级 sidecar：通过统一的 PostgREST 风格 REST 接口访问多种异构数据源。
+**用一套 PostgREST 兼容的 REST 接口，访问多种异构数据源。**
 
-在 PostgreSQL 元数据库或声明式 YAML 中注册 Foreign Server / Table 后，即可通过 `/v1/{schema}/{table}` CRUD 与 `/v1/rpc/{fn}` 访问远程 HTTP、Postgres、MySQL、MongoDB、Redis、S3 或本地文件。
+注册 Foreign Server / Table（PostgreSQL 元数据库或 `drivers.yaml`）后，前端即可用熟悉的 PostgREST 语法查询远程 HTTP、数据库、对象存储或本地文件 — 过滤器（`id=eq.1`）、`select`、`order`、`limit`、RPC，以及标准错误码。
 
-仓库地址：[github.com/monoposer/dataspan](https://github.com/monoposer/dataspan)
+```
+客户端  →  /v1/{schema}/{table}  →  driver  →  远程数据源
+```
 
 ## 快速启动
 
 ```bash
-cp .env.example .env
-# 设置 WRAPPER_MASTER_KEY: openssl rand -base64 32
-make postgres-up
-make migrate
-make run
+cp .env.example .env          # DATASPAN_VAULT_KEY=$(openssl rand -base64 32)
+make postgres-up && make migrate && make run
 ```
 
-- Playground：http://localhost:3020/playground/
 - Swagger：http://localhost:3020/swagger/
-- 健康检查：`GET /health` 返回 `{"status":"ok","version":"..."}`
 
-## 部署
+Docker 全栈部署见 [deploy/](deploy/README.md)（`make compose-up`）。
 
-生产环境部署示例见 **[deploy/](deploy/README.md)** 目录，所有 Docker 相关文件均在此：
+## 数据 API
 
-- `Dockerfile` / `Dockerfile.cli` — 镜像构建
-- `docker-compose.yml` — 本地/部署编排（源码构建 + postgres）
-- 环境变量与密钥配置说明
-- postgres / file 两种元数据存储模式指引
+| 方法 | 路径 | 示例 |
+|------|------|------|
+| GET | `/v1/{schema}/{table}` | `?id=eq.1&select=id,name&limit=10` |
+| POST | `/v1/{schema}/{table}` | 插入行 |
+| PATCH | `/v1/{schema}/{table}` | `?id=eq.1` + JSON body |
+| DELETE | `/v1/{schema}/{table}` | `?id=eq.1` |
+| POST | `/v1/rpc/{function}` | 远程过程调用 |
 
-## Docker 镜像
+`/rest/v1/` 为路径别名，兼容 [Supabase JS](https://supabase.com/docs/reference/javascript) 等 PostgREST 客户端。
 
-| 镜像 | 说明 |
-|------|------|
-| `monoposer/dataspan` | HTTP 服务（server） |
-| `monoposer/dataspan-cli` | 元数据转换 CLI（`convert`） |
+错误体与 PostgREST 一致（`code`、`message`、`details`、`hint`），例如未注册表时返回 `PGRST205`。
 
-本地构建：
-
-```bash
-make docker-build IMAGE=monoposer/dataspan:latest
-make docker-build-cli CLI_IMAGE=monoposer/dataspan-cli:latest
-```
-
-推送 `v*` 标签后会自动发布到 Docker Hub。
+设置 `DATASPAN_ANON_KEY` 后，数据面要求 `apikey` + `Authorization: Bearer`（anon key 或 `DATASPAN_JWT_SECRET` 签发的 JWT）。不设则本地开放访问。不做 RLS。
 
 ## Admin API
 
-- `POST /api/credentials` — 存储加密凭据
-- `POST /api/servers` — 注册 Foreign Server
-- `POST /api/tables` — 注册表与列映射
-- `POST /api/functions` — 注册 RPC
+查询数据前需先注册元数据：
 
-## 数据 API（PostgREST 风格）
+- `POST /api/credentials` — 加密存储凭据
+- `POST /api/servers` — Foreign Server + 协议
+- `POST /api/tables` — 表与列映射（`name` → `remote_name`）
+- `POST /api/functions` — RPC 映射
 
-- `GET /v1/{schema}/{table}?col=eq.val&select=a,b&limit=10`
-- `POST /v1/{schema}/{table}`
-- `PATCH /v1/{schema}/{table}?id=eq.1`
-- `DELETE /v1/{schema}/{table}?id=eq.1`
-- `POST /v1/rpc/{function}`
+协议与选型见 [docs/drivers.md](docs/drivers.md)。
 
-## 文档
+## 更多文档
 
-| 文档 | 说明 |
-|------|------|
-| [docs/](docs/README.md) | 架构、store、drivers、模块速查（英文） |
-| [deploy/](deploy/README.md) | 部署说明 |
-| [.cursor/DEVELOPMENT.md](.cursor/DEVELOPMENT.md) | 本地 env、curl、make |
-| [README.md](README.md) | English readme |
-| [AGENTS.md](AGENTS.md) | Cursor Agent 入口 |
-
-## 版本
-
-当前版本见 [VERSION](VERSION)。
-
-本地生成/更新版本：
-
-```bash
-make version              # 查看当前版本
-make version-next         # 预览下次 CI 发布的版本
-make version-bump         # patch +1 并写入 VERSION
-make version-bump BUMP=minor
-make version-set VER=1.0.0
-```
-
-合并到 `main` 后会自动 patch 升版、更新 `VERSION` 并推送 `v*` 标签，进而触发：
-
-- GitHub Release（`dataspan-convert` 二进制）
-- Docker Hub 镜像 `monoposer/dataspan`、`monoposer/dataspan-cli`
-
-需在仓库 Secrets 中配置 `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`。
-
-## License
-
-[MIT](LICENSE)
+| | |
+|-|-|
+| [docs/](docs/README.md) | 架构、store 模式、drivers |
+| [deploy/](deploy/README.md) | Docker 镜像与 compose |

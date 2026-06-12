@@ -19,7 +19,7 @@ func testVault(t *testing.T) *auth.Vault {
 	for i := range key {
 		key[i] = 0xAB
 	}
-	t.Setenv("WRAPPER_MASTER_KEY", base64.StdEncoding.EncodeToString(key))
+	t.Setenv("DATASPAN_VAULT_KEY", base64.StdEncoding.EncodeToString(key))
 	v, err := auth.NewVaultFromEnv()
 	if err != nil {
 		t.Fatal(err)

@@ -18,14 +18,16 @@ func NewPostgRESTHandler(e *service.Engine) *PostgRESTHandler {
 }
 
 func (h *PostgRESTHandler) Register(mux *http.ServeMux) {
+	// /rest/v1/ mirrors Supabase/PostgREST URL layout for client SDK compatibility.
 	mux.HandleFunc("/v1/", h.handle)
+	mux.HandleFunc("/rest/v1/", h.handle)
 }
 
 func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/v1/")
+	path := stripDataAPIPrefix(r.URL.Path)
 	path = strings.Trim(path, "/")
 	if path == "" {
-		http.NotFound(w, r)
+		writePostgRESTError(w, r, postgrest.InvalidPath(), postgrest.ErrorContext{})
 		return
 	}
 	parts := strings.Split(path, "/")
@@ -34,10 +36,11 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) != 2 {
-		http.NotFound(w, r)
+		writePostgRESTError(w, r, postgrest.InvalidPath(), postgrest.ErrorContext{})
 		return
 	}
 	schema, table := parts[0], parts[1]
+	ctx := postgrest.ErrorContext{Schema: schema, Table: table}
 	q := postgrest.ParseQuery(r.URL.Query())
 	prefer := postgrest.ParsePrefer(r.Header)
 
@@ -45,7 +48,7 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		rows, err := h.Engine.Select(r.Context(), schema, table, q)
 		if err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 		if rows == nil {
@@ -55,12 +58,12 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var row map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&row); err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 		ret, err := h.Engine.Insert(r.Context(), schema, table, row, prefer)
 		if err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 		if prefer.Representation && ret != nil {
@@ -71,40 +74,42 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPatch:
 		var row map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&row); err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 		n, err := h.Engine.Update(r.Context(), schema, table, q, row)
 		if err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"affected": n})
 	case http.MethodDelete:
 		n, err := h.Engine.Delete(r.Context(), schema, table, q)
 		if err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"affected": n})
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writePostgRESTError(w, r, postgrest.UnsupportedMethod(r.Method), ctx)
 	}
 }
 
 func (h *PostgRESTHandler) handleRPC(w http.ResponseWriter, r *http.Request, name string) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	schema := r.URL.Query().Get("schema")
 	if schema == "" {
 		schema = "public"
 	}
+	ctx := postgrest.ErrorContext{Schema: schema, RPC: name}
+
+	if r.Method != http.MethodPost {
+		writePostgRESTError(w, r, postgrest.InvalidRPCMethod(), ctx)
+		return
+	}
 	var body map[string]any
 	if r.Body != nil && r.ContentLength != 0 {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			writeError(w, r, err)
+			writePostgRESTError(w, r, err, ctx)
 			return
 		}
 	}
@@ -117,8 +122,17 @@ func (h *PostgRESTHandler) handleRPC(w http.ResponseWriter, r *http.Request, nam
 	}
 	result, err := h.Engine.InvokeRPC(r.Context(), schema, name, body, query)
 	if err != nil {
-		writeError(w, r, err)
+		writePostgRESTError(w, r, err, ctx)
 		return
 	}
 	writeJSON(w, http.StatusOK, result)
+}
+
+func stripDataAPIPrefix(path string) string {
+	for _, prefix := range []string{"/rest/v1/", "/v1/"} {
+		if strings.HasPrefix(path, prefix) {
+			return strings.TrimPrefix(path, prefix)
+		}
+	}
+	return path
 }

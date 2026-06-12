@@ -26,7 +26,7 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 	return r.ResponseWriter.Write(b)
 }
 
-// Logging records HTTP requests (skips /playground/ static assets).
+// Logging records HTTP requests (skips OpenAPI/Swagger static assets).
 func Logging(next http.Handler) http.Handler {
 	log := logx.Component("http")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,6 @@ func Logging(next http.Handler) http.Handler {
 }
 
 func skipRequestLog(path string) bool {
-	return strings.HasPrefix(path, "/playground/") ||
-		strings.HasPrefix(path, "/openapi/") ||
+	return strings.HasPrefix(path, "/openapi/") ||
 		path == "/swagger/" || path == "/swagger" || path == "/docs"
 }

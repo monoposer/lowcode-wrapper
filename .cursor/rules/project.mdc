@@ -28,7 +28,7 @@ Go HTTP sidecar, `net/http` + JSON, **no gRPC**.
 
 ## Credentials & security
 
-- `WRAPPER_MASTER_KEY` (32-byte base64) encrypts foreign credentials; Admin never returns plaintext
+- `DATASPAN_VAULT_KEY` (32-byte base64) encrypts foreign credentials; Admin never returns plaintext
 - File mode credentials may use `${ENV_VAR}` expansion
 
 ## Development

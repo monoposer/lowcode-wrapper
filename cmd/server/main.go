@@ -42,8 +42,12 @@ func main() {
 	logx.Component("server").Info("meta store ready")
 
 	engine := service.NewEngine(s)
+	gateway := auth.NewGatewayFromEnv()
+	if gateway.Enabled {
+		logx.Component("server").Info("data API auth enabled")
+	}
+
 	mux := http.NewServeMux()
-	api.RegisterPlayground(mux)
 	api.RegisterOpenAPI(mux)
 	api.NewAdminHandler(s).Register(mux)
 	api.NewPostgRESTHandler(engine).Register(mux)
@@ -52,11 +56,10 @@ func main() {
 	if port == "" {
 		port = "3020"
 	}
-	handler := api.CORS(api.Logging(mux))
+	handler := api.CORS(api.Logging(api.DataAPIAuth(gateway, mux)))
 	logx.Component("server").Info("listening",
 		"version", version.Version,
 		"addr", "http://localhost:"+port,
-		"playground", "/playground/",
 		"swagger", "/swagger/",
 	)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {

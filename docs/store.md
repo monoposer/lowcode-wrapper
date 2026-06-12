@@ -46,6 +46,6 @@ Use top-level `credentials` + `credential: name` only when multiple servers shar
 |--------|----------|
 | Meta DB password | `.env` `DATABASE_*` |
 | Foreign credentials | `servers[].credential` or Admin API; prefer `${ENV_VAR}` |
-| `WRAPPER_MASTER_KEY` | `.env` only |
+| `DATASPAN_VAULT_KEY` | `.env` only |
 
 Implementation: `internal/store/postgres/`, `internal/store/file/`.

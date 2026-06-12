@@ -1,0 +1,56 @@
+# E2E HTTP cases (run: make e2e). Data fixture: e2e/testdata/data/items.csv
+cases:
+  - name: health
+    method: GET
+    path: /health
+    status: 200
+    json_has:
+      status: ok
+
+  - name: select all
+    method: GET
+    path: /v1/public/items
+    status: 200
+    json_min_len: 2
+
+  - name: select filtered
+    method: GET
+    path: /v1/public/items
+    query: id=eq.1&select=id,name
+    status: 200
+    json:
+      - id: "1"
+        name: alpha
+
+  - name: rest v1 alias
+    method: GET
+    path: /rest/v1/public/items
+    query: id=eq.2
+    status: 200
+    json:
+      - id: "2"
+        name: beta
+
+  - name: table not found
+    method: GET
+    path: /v1/public/missing_table
+    status: 404
+    json_code: PGRST205
+
+auth_cases:
+  - name: missing apikey
+    method: GET
+    path: /v1/public/items
+    status: 401
+    json_code: PGRST301
+
+  - name: anon key accepted
+    method: GET
+    path: /v1/public/items
+    query: id=eq.1
+    apikey: test-anon-key
+    bearer: test-anon-key
+    status: 200
+    json:
+      - id: "1"
+        name: alpha

@@ -2,7 +2,7 @@
 
 ## `internal/api`
 
-Admin + PostgREST data plane + Playground + Swagger.
+Admin + PostgREST data plane + Swagger.
 
 | Path | Description |
 |------|-------------|
@@ -10,13 +10,13 @@ Admin + PostgREST data plane + Playground + Swagger.
 | `/api/credentials` `/api/servers` `/api/tables` `/api/functions` | Admin CRUD |
 | `/v1/{schema}/{table}` | GET/POST/PATCH/DELETE |
 | `/v1/rpc/{name}` | RPC |
-| `/playground/` `/swagger/` | UI |
+| `/swagger/` | API docs UI |
 
 Main files: `admin.go`, `postgrest.go`, `logging.go`. Curl examples: [.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md).
 
 ## `internal/auth`
 
-- `WRAPPER_MASTER_KEY` → AES-GCM vault
+- `DATASPAN_VAULT_KEY` → AES-GCM vault
 - Admin writes encrypted payloads; outbound requests decrypt; Admin **never** returns plaintext
 - HTTP auth (`httpauth.go`): `NONE` / `BASIC` / `API_KEY` / `BEARER_TOKEN` / `CLIENT_CREDENTIALS` / `UNIVERSAL`
 

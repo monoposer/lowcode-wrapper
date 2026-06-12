@@ -48,7 +48,7 @@ Uncomment the `volumes` section in `docker-compose.yml` to mount `drivers.yaml`.
 
 | Variable | Notes |
 |----------|-------|
-| `WRAPPER_MASTER_KEY` | 32-byte base64 AES key; **required** |
+| `DATASPAN_VAULT_KEY` | 32-byte base64 AES key; **required** |
 | `DATABASE_URL` or `DATABASE_*` | postgres store mode only |
 | Foreign API keys | In `drivers.yaml` or via Admin API |
 

@@ -5,7 +5,6 @@ info:
     PostgREST-style FDW sidecar: Admin API registers foreign servers/tables/functions;
     Data API proxies CRUD and RPC to remote sources (http, postgres, mysql, file, mongo, redis, s3, notion, firebase).
 
-    **Playground:** `/playground/` — interactive request UI.
   version: 0.1.0
   license:
     name: MIT
@@ -482,6 +481,24 @@ components:
       properties:
         error:
           type: string
+          description: Admin API error (legacy shape)
+
+    PostgRESTErrorBody:
+      type: object
+      required: [code, message, details, hint]
+      properties:
+        code:
+          type: string
+          example: PGRST205
+        message:
+          type: string
+          example: Could not find the table 'public.orders' in the schema cache
+        details:
+          type: string
+          nullable: true
+        hint:
+          type: string
+          nullable: true
 
     Affected:
       type: object
