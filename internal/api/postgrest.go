@@ -18,28 +18,23 @@ func NewPostgRESTHandler(e *service.Engine) *PostgRESTHandler {
 }
 
 func (h *PostgRESTHandler) Register(mux *http.ServeMux) {
-	// /rest/v1/ mirrors Supabase/PostgREST URL layout for client SDK compatibility.
+	// PostgREST layout: /{table} with Accept-Profile / Content-Profile for schema.
 	mux.HandleFunc("/v1/", h.handle)
 	mux.HandleFunc("/rest/v1/", h.handle)
 }
 
 func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
-	path := stripDataAPIPrefix(r.URL.Path)
-	path = strings.Trim(path, "/")
-	if path == "" {
+	res, ok := parseDataAPIResource(r.URL.Path, r)
+	if !ok {
 		writePostgRESTError(w, r, postgrest.InvalidPath(), postgrest.ErrorContext{})
 		return
 	}
-	parts := strings.Split(path, "/")
-	if len(parts) == 2 && parts[0] == "rpc" {
-		h.handleRPC(w, r, parts[1])
+	if res.isRPC() {
+		h.handleRPC(w, r, res.Schema, res.RPC)
 		return
 	}
-	if len(parts) != 2 {
-		writePostgRESTError(w, r, postgrest.InvalidPath(), postgrest.ErrorContext{})
-		return
-	}
-	schema, table := parts[0], parts[1]
+
+	schema, table := res.Schema, res.Table
 	ctx := postgrest.ErrorContext{Schema: schema, Table: table}
 	q := postgrest.ParseQuery(r.URL.Query())
 	prefer := postgrest.ParsePrefer(r.Header)
@@ -95,11 +90,7 @@ func (h *PostgRESTHandler) handle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *PostgRESTHandler) handleRPC(w http.ResponseWriter, r *http.Request, name string) {
-	schema := r.URL.Query().Get("schema")
-	if schema == "" {
-		schema = "public"
-	}
+func (h *PostgRESTHandler) handleRPC(w http.ResponseWriter, r *http.Request, schema, name string) {
 	ctx := postgrest.ErrorContext{Schema: schema, RPC: name}
 
 	if r.Method != http.MethodPost {

@@ -4,7 +4,7 @@
 # Usage:
 #   scripts/version.sh              # print current version
 #   scripts/version.sh show
-#   scripts/version.sh next         # next release version (matches CI tag-release logic)
+#   scripts/version.sh next         # version CI will tag on merge (reads VERSION)
 #   scripts/version.sh bump patch   # bump and write VERSION
 #   scripts/version.sh bump minor
 #   scripts/version.sh bump major
@@ -63,14 +63,7 @@ bump_part() {
 }
 
 next_release_version() {
-  local tag base
-  tag="$(latest_tag)"
-  if [[ -z "$tag" ]]; then
-    read_version
-    return
-  fi
-  base="${tag#v}"
-  bump_part "$base" patch
+  read_version
 }
 
 cmd_show() {

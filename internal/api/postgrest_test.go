@@ -12,7 +12,7 @@ import (
 
 func TestWritePostgRESTError(t *testing.T) {
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/v1/public/orders", nil)
+	req := httptest.NewRequest(http.MethodGet, "/rest/v1/orders", nil)
 
 	writePostgRESTError(rec, req, errs.ErrNotFound, postgrest.ErrorContext{
 		Schema: "public",
@@ -45,7 +45,7 @@ func TestWritePostgRESTError(t *testing.T) {
 
 func TestStripDataAPIPrefix(t *testing.T) {
 	cases := map[string]string{
-		"/v1/public/orders":      "public/orders",
+		"/v1/items":              "items",
 		"/rest/v1/public/orders": "public/orders",
 		"/rest/v1/rpc/fn":        "rpc/fn",
 	}

@@ -5,7 +5,7 @@ PostgREST-style **sidecar** (not a PostgreSQL FDW extension): metadata store, en
 ## Request flow
 
 ```
-Client → /v1/{schema}/{table} | /v1/rpc/{fn}
+Client → /rest/v1/{table} (Accept-Profile / Content-Profile) | /rest/v1/rpc/{fn}
   → internal/api/postgrest.go
   → internal/postgrest/query.go
   → internal/service/engine.go

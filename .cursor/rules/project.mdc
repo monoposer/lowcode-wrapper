@@ -17,7 +17,7 @@ Go HTTP sidecar, `net/http` + JSON, **no gRPC**.
 ## Data plane
 
 - Admin: `/api/credentials|servers|tables|functions`
-- Data: `/v1/{schema}/{table}` CRUD, `/v1/rpc/{fn}`
+- Data: `/rest/v1/{table}` CRUD (`Accept-Profile` / `Content-Profile`), `/rest/v1/rpc/{fn}`
 - Columns: local `name` → remote `remote_name` (`postgrest.MapFilters` / `MapRowToRemote`)
 
 ## Drivers

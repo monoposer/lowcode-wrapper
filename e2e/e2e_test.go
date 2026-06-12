@@ -42,8 +42,9 @@ type httpCase struct {
 	JSONHas    map[string]any `yaml:"json_has"`
 	JSONMinLen int            `yaml:"json_min_len"`
 	JSONCode   string         `yaml:"json_code"`
-	APIKey     string         `yaml:"apikey"`
-	Bearer     string         `yaml:"bearer"`
+	APIKey     string            `yaml:"apikey"`
+	Bearer     string            `yaml:"bearer"`
+	Headers    map[string]string `yaml:"headers"`
 }
 
 func TestE2E(t *testing.T) {
@@ -178,6 +179,9 @@ func doCase(t *testing.T, srv *httptest.Server, c httpCase) {
 	}
 	if c.Bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Bearer)
+	}
+	for k, v := range c.Headers {
+		req.Header.Set(k, v)
 	}
 
 	res, err := http.DefaultClient.Do(req)

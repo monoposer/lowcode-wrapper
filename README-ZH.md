@@ -5,7 +5,7 @@
 注册 Foreign Server / Table（PostgreSQL 元数据库或 `drivers.yaml`）后，前端即可用熟悉的 PostgREST 语法查询远程 HTTP、数据库、对象存储或本地文件 — 过滤器（`id=eq.1`）、`select`、`order`、`limit`、RPC，以及标准错误码。
 
 ```
-客户端  →  /v1/{schema}/{table}  →  driver  →  远程数据源
+客户端  →  /rest/v1/{table}  →  driver  →  远程数据源
 ```
 
 ## 快速启动
@@ -23,10 +23,10 @@ Docker 全栈部署见 [deploy/](deploy/README.md)（`make compose-up`）。
 
 | 方法 | 路径 | 示例 |
 |------|------|------|
-| GET | `/v1/{schema}/{table}` | `?id=eq.1&select=id,name&limit=10` |
-| POST | `/v1/{schema}/{table}` | 插入行 |
-| PATCH | `/v1/{schema}/{table}` | `?id=eq.1` + JSON body |
-| DELETE | `/v1/{schema}/{table}` | `?id=eq.1` |
+| GET | `/rest/v1/{table}` | `Accept-Profile: public` · `?id=eq.1&select=id,name` |
+| POST | `/rest/v1/{table}` | `Content-Profile: public` · JSON body |
+| PATCH | `/rest/v1/{table}` | `Content-Profile: public` · `?id=eq.1` + body |
+| DELETE | `/rest/v1/{table}` | `Content-Profile: public` · `?id=eq.1` |
 | POST | `/v1/rpc/{function}` | 远程过程调用 |
 
 `/rest/v1/` 为路径别名，兼容 [Supabase JS](https://supabase.com/docs/reference/javascript) 等 PostgREST 客户端。

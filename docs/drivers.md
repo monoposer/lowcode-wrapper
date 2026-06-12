@@ -121,7 +121,7 @@ Local **YAML / Excel** tabular files use the `file` driver with `format`. **Goog
 
 | Field | Role |
 |-------|------|
-| `schema` | API path `/v1/{schema}/{table}` only; unrelated to disk layout |
+| `schema` | Metadata namespace (`Accept-Profile` / `Content-Profile`); unrelated to disk layout |
 | `name` | Logical table name; for xlsx, **equals sheet name** |
 | `remoteName` | File path relative to `rootPath`; defaults to `name` |
 | `options.format` | File format; inferred from extension if omitted |

@@ -5,7 +5,7 @@
 Register foreign servers and tables once (PostgreSQL metadata or `drivers.yaml`), then query HTTP APIs, databases, object storage, or local files through the same REST surface your frontend already knows — filters (`id=eq.1`), `select`, `order`, `limit`, RPC, and PostgREST error codes.
 
 ```
-Client  →  /v1/{schema}/{table}  →  driver  →  remote source
+Client  →  /rest/v1/{table}  →  driver  →  remote source
 ```
 
 ## Quick start
@@ -23,10 +23,10 @@ Run everything in Docker: [deploy/](deploy/README.md) (`make compose-up`).
 
 | Method | Path | Example |
 |--------|------|---------|
-| GET | `/v1/{schema}/{table}` | `?id=eq.1&select=id,name&limit=10` |
-| POST | `/v1/{schema}/{table}` | insert row |
-| PATCH | `/v1/{schema}/{table}` | `?id=eq.1` + JSON body |
-| DELETE | `/v1/{schema}/{table}` | `?id=eq.1` |
+| GET | `/rest/v1/{table}` | `Accept-Profile: public` · `?id=eq.1&select=id,name` |
+| POST | `/rest/v1/{table}` | `Content-Profile: public` · JSON body |
+| PATCH | `/rest/v1/{table}` | `Content-Profile: public` · `?id=eq.1` + body |
+| DELETE | `/rest/v1/{table}` | `Content-Profile: public` · `?id=eq.1` |
 | POST | `/v1/rpc/{function}` | remote procedure |
 
 `/rest/v1/` is an alias for [Supabase JS](https://supabase.com/docs/reference/javascript) and other PostgREST clients.

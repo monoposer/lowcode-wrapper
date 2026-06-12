@@ -14,7 +14,6 @@ concurrency:
 
 jobs:
   tag:
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,33 +26,27 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Create release tag
+      - name: Tag from VERSION
         run: |
+          set -euo pipefail
+
           if git tag --points-at HEAD | grep -qE '^v[0-9]'; then
             echo "Commit already tagged, skipping."
             exit 0
           fi
 
-          LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1)"
-          if [ -z "$LATEST_TAG" ]; then
-            NEXT="$(tr -d '[:space:]' < VERSION)"
-            TAG="v${NEXT}"
-            git tag -a "$TAG" -m "Release ${TAG}"
-            git push origin "$TAG"
-            echo "Tagged first release ${TAG} on merge commit."
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid VERSION: $VERSION (expected MAJOR.MINOR.PATCH)" >&2
+            exit 1
+          fi
+
+          TAG="v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists. Bump VERSION before merging to main."
             exit 0
           fi
 
-          BASE="${LATEST_TAG#v}"
-          IFS=. read -r MAJOR MINOR PATCH <<< "$BASE"
-          PATCH=$((PATCH + 1))
-          NEXT="${MAJOR}.${MINOR}.${PATCH}"
-          TAG="v${NEXT}"
-
-          printf '%s\n' "$NEXT" > VERSION
-          git add VERSION
-          git commit -m "chore(release): ${TAG}"
           git tag -a "$TAG" -m "Release ${TAG}"
-          git push origin main
           git push origin "$TAG"
-          echo "Released ${TAG}"
+          echo "Tagged ${TAG} — convert-release and docker-publish will run on this tag."

@@ -1,6 +1,6 @@
 # dataspan — Agent entry
 
-PostgREST-style sidecar: `/v1/{schema}/{table}` CRUD + `/v1/rpc/{fn}` across multiple protocol drivers.
+PostgREST-style sidecar: `/rest/v1/{table}` CRUD + `/rest/v1/rpc/{fn}` across multiple protocol drivers.
 
 ## Quick start
 

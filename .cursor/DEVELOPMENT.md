@@ -81,20 +81,22 @@ Set `DATASPAN_ANON_KEY` (and optionally `DATASPAN_SERVICE_KEY`, `DATASPAN_JWT_SE
 ## Data API examples
 
 ```bash
-curl "$BASE/v1/public/orders?id=eq.1&select=id,amount"
-curl -X POST "$BASE/v1/public/orders" -H 'Content-Type: application/json' -d '{"id":"1","amount":"99"}'
-curl -X PATCH "$BASE/v1/public/orders?id=eq.1" -H 'Content-Type: application/json' -d '{"amount":"100"}'
+curl "$BASE/rest/v1/orders?id=eq.1&select=id,amount" -H 'Accept-Profile: public'
+curl -X POST "$BASE/rest/v1/orders" -H 'Content-Type: application/json' -H 'Content-Profile: public' -d '{"id":"1","amount":"99"}'
+curl -X PATCH "$BASE/rest/v1/orders?id=eq.1" -H 'Content-Type: application/json' -H 'Content-Profile: public' -d '{"amount":"100"}'
 ```
 
 ## Version
 
 ```bash
 make version              # current VERSION file
-make version-next         # next release (same logic as CI on merge)
-make version-bump         # bump patch (default)
+make version-next         # same as VERSION (tag CI uses on merge to main)
+make version-bump         # bump VERSION before merge (patch default)
 make version-bump BUMP=minor
 make version-set VER=1.0.0
 ./scripts/version.sh --help
+
+Merging to `main` tags `v$(cat VERSION)` and triggers GitHub Release (convert CLI) + Docker publish. Bump `VERSION` in the PR when the tag does not exist yet.
 ```
 
 ## Migrations

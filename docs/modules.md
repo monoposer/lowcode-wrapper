@@ -8,8 +8,8 @@ Admin + PostgREST data plane + Swagger.
 |------|-------------|
 | `/health` | Health check (includes `version`) |
 | `/api/credentials` `/api/servers` `/api/tables` `/api/functions` | Admin CRUD |
-| `/v1/{schema}/{table}` | GET/POST/PATCH/DELETE |
-| `/v1/rpc/{name}` | RPC |
+| `/rest/v1/{table}` | GET/POST/PATCH/DELETE (schema via profile headers) |
+| `/rest/v1/rpc/{name}` | RPC |
 | `/swagger/` | API docs UI |
 
 Main files: `admin.go`, `postgrest.go`, `logging.go`. Curl examples: [.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md).
