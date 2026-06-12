@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: wrapper
-      POSTGRES_PASSWORD: wrapper
+      POSTGRES_USER: dataspan
+      POSTGRES_PASSWORD: dataspan
       POSTGRES_DB: dataspan_meta
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - dataspan-pg-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wrapper -d dataspan_meta"]
+      test: ["CMD-SHELL", "pg_isready -U dataspan -d dataspan_meta"]
       interval: 3s
       timeout: 3s
       retries: 10
@@ -25,16 +25,19 @@ services:
     ports:
       - "${PORT:-3020}:3020"
     environment:
-      WRAPPER_STORE_MODE: ${WRAPPER_STORE_MODE:-db}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://wrapper:wrapper@postgres:5432/dataspan_meta?sslmode=disable}
+      DATASPAN_STORE_MODE: ${DATASPAN_STORE_MODE:-db}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dataspan:dataspan@postgres:5432/dataspan_meta?sslmode=disable}
       DATASPAN_VAULT_KEY: ${DATASPAN_VAULT_KEY:?set DATASPAN_VAULT_KEY in .env}
-      WRAPPER_DRIVERS_FILE: ${WRAPPER_DRIVERS_FILE:-/config/drivers.yaml}
+      DATASPAN_DRIVERS_FILE: ${DATASPAN_DRIVERS_FILE:-/config/drivers.yaml}
       PORT: "3020"
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_FORMAT: ${LOG_FORMAT:-json}
       DATASPAN_ANON_KEY: ${DATASPAN_ANON_KEY:-}
       DATASPAN_SERVICE_KEY: ${DATASPAN_SERVICE_KEY:-}
       DATASPAN_JWT_SECRET: ${DATASPAN_JWT_SECRET:-}
+      DATASPAN_ADMIN_KEY: ${DATASPAN_ADMIN_KEY:-}
+      DATASPAN_AUTOMIGRATE: ${DATASPAN_AUTOMIGRATE:-1}
+      DATASPAN_META_CACHE_TTL: ${DATASPAN_META_CACHE_TTL:-}
     depends_on:
       postgres:
         condition: service_healthy

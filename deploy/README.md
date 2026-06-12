@@ -14,7 +14,6 @@ Meta DB only (run server on host with `make run`):
 
 ```bash
 docker compose -f deploy/docker-compose.yml up -d postgres
-make migrate
 make run
 ```
 
@@ -38,8 +37,8 @@ Published images (`monoposer/dataspan`, `monoposer/dataspan-cli`) are built by G
 ## File metadata store (no Meta DB)
 
 ```bash
-WRAPPER_STORE_MODE=file
-WRAPPER_DRIVERS_FILE=/config/drivers.yaml
+DATASPAN_STORE_MODE=file
+DATASPAN_DRIVERS_FILE=/config/drivers.yaml
 ```
 
 Uncomment the `volumes` section in `docker-compose.yml` to mount `drivers.yaml`.

@@ -19,8 +19,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/monoposer/dataspan/internal/api"
+	"github.com/monoposer/dataspan/internal/api/admin"
+	"github.com/monoposer/dataspan/internal/api/rest"
 	"github.com/monoposer/dataspan/internal/auth"
-	"github.com/monoposer/dataspan/internal/service"
+	"github.com/monoposer/dataspan/internal/engine"
+	"github.com/monoposer/dataspan/internal/httpx"
 	"github.com/monoposer/dataspan/internal/store"
 
 	_ "github.com/monoposer/dataspan/internal/driver/file"
@@ -91,7 +94,7 @@ func startServer(t *testing.T, opts serverOpts) *httptest.Server {
 		key[i] = 0xAB
 	}
 	t.Setenv("DATASPAN_VAULT_KEY", base64.StdEncoding.EncodeToString(key))
-	t.Setenv("WRAPPER_STORE_MODE", "file")
+	t.Setenv("DATASPAN_STORE_MODE", "file")
 	if opts.anonKey != "" {
 		t.Setenv("DATASPAN_ANON_KEY", opts.anonKey)
 	} else {
@@ -124,7 +127,7 @@ tables:
 `)+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("WRAPPER_DRIVERS_FILE", driversPath)
+	t.Setenv("DATASPAN_DRIVERS_FILE", driversPath)
 
 	vault, err := auth.NewVaultFromEnv()
 	if err != nil {
@@ -136,14 +139,15 @@ tables:
 	}
 	t.Cleanup(func() { st.Close() })
 
-	engine := service.NewEngine(st)
+	eng := engine.NewEngine(st)
 	gateway := auth.NewGatewayFromEnv()
 
 	mux := http.NewServeMux()
-	api.NewAdminHandler(st).Register(mux)
-	api.NewPostgRESTHandler(engine).Register(mux)
+	storeCfg, _ := store.LoadConfig()
+	admin.New(st, storeCfg.Mode).Register(mux)
+	rest.New(eng).Register(mux)
 
-	handler := api.CORS(api.DataAPIAuth(gateway, mux))
+	handler := httpx.CORS(api.DataAuth(gateway, mux))
 	return httptest.NewServer(handler)
 }
 

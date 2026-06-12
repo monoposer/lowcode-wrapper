@@ -22,7 +22,7 @@ func TestUpDownSQLite(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := gdb.Migrator()
-	for _, table := range []string{"credentials", "servers", "foreign_tables", "foreign_columns", "foreign_functions"} {
+	for _, table := range []string{"credentials", "servers", "tables", "columns", "functions"} {
 		if !m.HasTable(table) {
 			t.Fatalf("missing table %q", table)
 		}

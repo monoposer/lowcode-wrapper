@@ -12,10 +12,10 @@ Client  →  /rest/v1/{table}  →  driver  →  remote source
 
 ```bash
 cp .env.example .env          # DATASPAN_VAULT_KEY=$(openssl rand -base64 32)
-make postgres-up && make migrate && make run
+make postgres-up && make run
 ```
 
-Open http://localhost:3020/swagger/ (runtime Data API OpenAPI from `GET /rest/v1/`)
+Open http://localhost:3020/rest/v1/ for runtime OpenAPI (`application/openapi+json`)
 
 Run everything in Docker: [deploy/](deploy/README.md) (`make compose-up`).
 
@@ -29,7 +29,9 @@ Run everything in Docker: [deploy/](deploy/README.md) (`make compose-up`).
 | DELETE | `/rest/v1/{table}` | `Content-Profile: public` · `?id=eq.1` |
 | POST | `/v1/rpc/{function}` | remote procedure |
 
-`/rest/v1/` is an alias for [Supabase JS](https://supabase.com/docs/reference/javascript) and other PostgREST clients.
+`/rest/v1/` is an alias for [Supabase JS](https://supabase.com/docs/reference/javascript) **database client** (`.from()` / `.rpc()`). Auth, Storage, and Realtime are not provided.
+
+PostgREST-compatible extras: `.single()` / `.maybeSingle()` (`Accept: application/vnd.pgrst.object+json`), `Prefer: count=exact`, bulk insert (JSON array body), PATCH/DELETE return `204` unless `Prefer: return=representation`.
 
 Set `DATASPAN_ANON_KEY` to require `apikey` + `Authorization: Bearer` on the data API (optional JWT via `DATASPAN_JWT_SECRET`). No row-level security — gateway auth only.
 
@@ -37,12 +39,14 @@ Errors follow the PostgREST shape (`code`, `message`, `details`, `hint`) — e.g
 
 ## Admin API
 
-Register metadata before querying the data API:
+Register metadata before querying the data API (db mode only; use `drivers.yaml` in file mode):
 
-- `POST /api/credentials` — encrypted secrets
-- `POST /api/servers` — foreign server + protocol
-- `POST /api/tables` — table + column mapping (`name` → `remote_name`)
-- `POST /api/functions` — RPC mapping
+- `POST /admin/api/credentials` — encrypted secrets (or inline on `POST /admin/api/servers`)
+- `POST /admin/api/servers` — foreign server + protocol (+ optional inline `credential`)
+- `POST /admin/api/tables` — table + column mapping (`name` → `remote_name`)
+- `POST /admin/api/functions` — RPC mapping
+
+`GET /health` (liveness) · `GET /health/ready` (meta store ping)
 
 Protocols: `http`, `postgres`, `mysql`, `mongo`, `redis`, `s3`, `file`, and SaaS presets (`notion`, `firebase`, `airtable`, `sheets`). See [docs/drivers.md](docs/drivers.md).
 

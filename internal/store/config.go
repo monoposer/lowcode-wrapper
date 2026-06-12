@@ -32,17 +32,10 @@ type Config struct {
 func LoadConfig() (Config, error) {
 	cfg := Config{Mode: ModeDB}
 
-	if mode := strings.TrimSpace(os.Getenv("WRAPPER_STORE_MODE")); mode != "" {
-		mode = strings.ToLower(mode)
-		if mode == "postgres" {
-			mode = "db" // legacy alias
-		}
-		cfg.Mode = Mode(mode)
+	if mode := strings.TrimSpace(os.Getenv("DATASPAN_STORE_MODE")); mode != "" {
+		cfg.Mode = Mode(strings.ToLower(mode))
 	}
-	path := strings.TrimSpace(os.Getenv("WRAPPER_DRIVERS_FILE"))
-	if path == "" {
-		path = strings.TrimSpace(os.Getenv("WRAPPER_STORE_FILE")) // legacy alias
-	}
+	path := strings.TrimSpace(os.Getenv("DATASPAN_DRIVERS_FILE"))
 	if path == "" {
 		path = defaultDriversFile
 	}

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/models"
 	"github.com/monoposer/dataspan/internal/postgrest"
 	"github.com/monoposer/dataspan/internal/store/errs"
 )
@@ -44,5 +46,21 @@ func TestMapErrorPreservesAPIError(t *testing.T) {
 	got := postgrest.MapError(want, postgrest.ErrorContext{})
 	if got.Code != want.Code || got.Status != want.Status {
 		t.Fatalf("got=%+v want=%+v", got, want)
+	}
+}
+
+func TestMapErrorDriverOperationNotSupported(t *testing.T) {
+	got := postgrest.MapError(
+		driver.OpNotSupported(driver.OpUpsert, models.ProtocolFile),
+		postgrest.ErrorContext{Schema: "public", Table: "items"},
+	)
+	if got.Code != "PGRST000" || got.Status != http.StatusMethodNotAllowed {
+		t.Fatalf("got=%+v", got)
+	}
+	if got.Message != `upsert is not supported for protocol "file"` {
+		t.Fatalf("message=%q", got.Message)
+	}
+	if got.Hint == nil || *got.Hint == "" {
+		t.Fatalf("hint missing")
 	}
 }

@@ -49,6 +49,13 @@ func New(ctx context.Context, srv models.Server, cred map[string]any) (driver.Dr
 	return &Driver{pool: pool, schema: schema}, nil
 }
 
+func (d *Driver) Close() error {
+	if d.pool != nil {
+		d.pool.Close()
+	}
+	return nil
+}
+
 func strCred(cred map[string]any, key string) string {
 	if v, ok := cred[key]; ok {
 		return fmt.Sprint(v)
@@ -82,7 +89,11 @@ func (d *Driver) Select(ctx context.Context, req driver.SelectRequest) ([]map[st
 		}
 		cols = strings.Join(quoted, ", ")
 	}
-	where, args := buildWhere(postgrest.MapFilters(req.Filters, req.Resolved.Columns), 1)
+	where, args := whereClause(
+		postgrest.MapFilters(req.Filters, req.Resolved.Columns),
+		mapOrGroups(req.OrGroups, req.Resolved.Columns),
+		1,
+	)
 	query := fmt.Sprintf("SELECT %s FROM %s", cols, d.qualified(schema, table))
 	if where != "" {
 		query += " WHERE " + where
@@ -110,6 +121,64 @@ func (d *Driver) Select(ctx context.Context, req driver.SelectRequest) ([]map[st
 	}
 	defer rows.Close()
 	return scanRows(rows)
+}
+
+func (d *Driver) Count(ctx context.Context, req driver.SelectRequest) (int, error) {
+	schema, table := d.remoteTable(req.Resolved)
+	where, args := whereClause(
+		postgrest.MapFilters(req.Filters, req.Resolved.Columns),
+		mapOrGroups(req.OrGroups, req.Resolved.Columns),
+		1,
+	)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", d.qualified(schema, table))
+	if where != "" {
+		query += " WHERE " + where
+	}
+	var n int64
+	if err := d.pool.QueryRow(ctx, query, args...).Scan(&n); err != nil {
+		return 0, err
+	}
+	return int(n), nil
+}
+
+func mapOrGroups(groups [][]postgrest.Filter, cols []models.Column) [][]postgrest.Filter {
+	if len(groups) == 0 {
+		return nil
+	}
+	out := make([][]postgrest.Filter, len(groups))
+	for i, g := range groups {
+		out[i] = postgrest.MapFilters(g, cols)
+	}
+	return out
+}
+
+func whereClause(filters []postgrest.Filter, orGroups [][]postgrest.Filter, startIdx int) (string, []any) {
+	var parts []string
+	var args []any
+	idx := startIdx
+	if len(filters) > 0 {
+		w, a := buildWhere(filters, idx)
+		if w != "" {
+			parts = append(parts, w)
+			args = append(args, a...)
+			idx += len(a)
+		}
+	}
+	if len(orGroups) > 0 {
+		orParts := make([]string, 0, len(orGroups))
+		for _, group := range orGroups {
+			w, a := buildWhere(group, idx)
+			if w != "" {
+				orParts = append(orParts, "("+w+")")
+				args = append(args, a...)
+				idx += len(a)
+			}
+		}
+		if len(orParts) > 0 {
+			parts = append(parts, "("+strings.Join(orParts, " OR ")+")")
+		}
+	}
+	return strings.Join(parts, " AND "), args
 }
 
 func (d *Driver) Insert(ctx context.Context, req driver.RowRequest) (map[string]any, error) {
@@ -145,7 +214,11 @@ func (d *Driver) Update(ctx context.Context, req driver.RowRequest) (int, error)
 	if len(cols) == 0 {
 		return 0, fmt.Errorf("no columns to update")
 	}
-	where, wArgs := buildWhere(postgrest.MapFilters(req.Filters, req.Resolved.Columns), len(args)+1)
+	where, wArgs := whereClause(
+		postgrest.MapFilters(req.Filters, req.Resolved.Columns),
+		mapOrGroups(req.OrGroups, req.Resolved.Columns),
+		len(args)+1,
+	)
 	setParts := make([]string, len(cols))
 	for i, c := range cols {
 		setParts[i] = fmt.Sprintf("%q=$%d", c, i+1)
@@ -180,7 +253,11 @@ func (d *Driver) Upsert(ctx context.Context, req driver.RowRequest) (bool, map[s
 
 func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, error) {
 	schema, table := d.remoteTable(req.Resolved)
-	where, args := buildWhere(postgrest.MapFilters(req.Filters, req.Resolved.Columns), 1)
+	where, args := whereClause(
+		postgrest.MapFilters(req.Filters, req.Resolved.Columns),
+		mapOrGroups(req.OrGroups, req.Resolved.Columns),
+		1,
+	)
 	query := fmt.Sprintf("DELETE FROM %s", d.qualified(schema, table))
 	if where != "" {
 		query += " WHERE " + where
@@ -193,7 +270,7 @@ func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, err
 }
 
 func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, error) {
-	return nil, fmt.Errorf("postgres driver: invoke not supported; use sql operation via table mapping")
+	return nil, driver.OpNotSupported(driver.OpInvoke, models.ProtocolPostgres)
 }
 
 func buildWhere(filters []postgrest.Filter, startIdx int) (string, []any) {

@@ -69,8 +69,8 @@ func TestBuildOpenAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if spec["swagger"] != "2.0" {
-		t.Fatalf("swagger=%v", spec["swagger"])
+	if spec["openapi"] != "3.1.0" {
+		t.Fatalf("openapi=%v", spec["openapi"])
 	}
 	paths, ok := spec["paths"].(map[string]any)
 	if !ok {
@@ -82,13 +82,17 @@ func TestBuildOpenAPI(t *testing.T) {
 	if _, ok := paths["/rpc/ship"]; !ok {
 		t.Fatalf("missing rpc path: %v", paths)
 	}
-	defs, ok := spec["definitions"].(map[string]any)
+	components, ok := spec["components"].(map[string]any)
 	if !ok {
-		t.Fatal("missing definitions")
+		t.Fatal("missing components")
 	}
-	orders, ok := defs["orders"].(map[string]any)
+	schemas, ok := components["schemas"].(map[string]any)
 	if !ok {
-		t.Fatal("missing orders definition")
+		t.Fatal("missing components.schemas")
+	}
+	orders, ok := schemas["orders"].(map[string]any)
+	if !ok {
+		t.Fatal("missing orders schema")
 	}
 	props, ok := orders["properties"].(map[string]any)
 	if !ok || props["amount"] == nil {

@@ -3,9 +3,11 @@
 | Doc | Contents |
 |-----|----------|
 | [技术架构.md](技术架构.md) | **完整项目架构**（中文：分层、元数据、API、Driver、OpenAPI） |
+| [架构分析.md](架构分析.md) | **架构评估**（中文：定位、优缺点、优化建议、选型对比） |
 | [architecture.md](architecture.md) | Request flow, layout, column mapping |
 | [store.md](store.md) | postgres vs file, `drivers.yaml` |
 | [drivers.md](drivers.md) | Protocol groups, selection guide, extending drivers |
+| [drivers/](drivers/README.md) | Per-driver configuration (http / postgres / file / …) |
 | [modules.md](modules.md) | `internal/*` package map |
 
 **Operations** (env, curl, make): [.cursor/DEVELOPMENT.md](../.cursor/DEVELOPMENT.md)

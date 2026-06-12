@@ -1,16 +1,14 @@
 package store_test
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/monoposer/dataspan/internal/store"
 )
 
 func TestLoadConfigDefaults(t *testing.T) {
-	t.Setenv("WRAPPER_STORE_MODE", "")
-	t.Setenv("WRAPPER_DRIVERS_FILE", "")
-	t.Setenv("WRAPPER_STORE_FILE", "")
+	t.Setenv("DATASPAN_STORE_MODE", "")
+	t.Setenv("DATASPAN_DRIVERS_FILE", "")
 
 	cfg, err := store.LoadConfig()
 	if err != nil {
@@ -24,20 +22,9 @@ func TestLoadConfigDefaults(t *testing.T) {
 	}
 }
 
-func TestLoadConfigLegacyPostgresMode(t *testing.T) {
-	t.Setenv("WRAPPER_STORE_MODE", "postgres")
-	cfg, err := store.LoadConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cfg.Mode != store.ModeDB {
-		t.Fatalf("mode = %q, want db", cfg.Mode)
-	}
-}
-
-func TestLoadConfigFileMode(t *testing.T) {
-	t.Setenv("WRAPPER_STORE_MODE", "file")
-	t.Setenv("WRAPPER_DRIVERS_FILE", "./config/drivers.yaml")
+func TestLoadConfigDataspanEnv(t *testing.T) {
+	t.Setenv("DATASPAN_STORE_MODE", "file")
+	t.Setenv("DATASPAN_DRIVERS_FILE", "./config/drivers.yaml")
 
 	cfg, err := store.LoadConfig()
 	if err != nil {
@@ -51,27 +38,10 @@ func TestLoadConfigFileMode(t *testing.T) {
 	}
 }
 
-func TestLoadConfigLegacyStoreFileEnv(t *testing.T) {
-	t.Setenv("WRAPPER_STORE_MODE", "file")
-	t.Setenv("WRAPPER_DRIVERS_FILE", "")
-	t.Setenv("WRAPPER_STORE_FILE", "./legacy.yaml")
-
-	cfg, err := store.LoadConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cfg.File.Path != "./legacy.yaml" {
-		t.Fatalf("path = %q", cfg.File.Path)
-	}
-}
-
-func TestLoadConfigIgnoresMissingYAML(t *testing.T) {
-	t.Setenv("WRAPPER_STORE_CONFIG", filepath.Join(t.TempDir(), "missing.yaml"))
-	cfg, err := store.LoadConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cfg.Mode != store.ModeDB {
-		t.Fatalf("mode = %q", cfg.Mode)
+func TestLoadConfigRejectsPostgresMode(t *testing.T) {
+	t.Setenv("DATASPAN_STORE_MODE", "postgres")
+	_, err := store.LoadConfig()
+	if err == nil {
+		t.Fatal("expected error for unsupported store mode postgres")
 	}
 }

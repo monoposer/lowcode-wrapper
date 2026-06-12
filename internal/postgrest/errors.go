@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/monoposer/dataspan/internal/errkind"
 	"github.com/monoposer/dataspan/internal/store/errs"
 )
 
@@ -119,6 +120,62 @@ func InvalidPath() *APIError {
 	}
 }
 
+func SingleNotFound() *APIError {
+	return &APIError{
+		Code:    "PGRST116",
+		Message: "Cannot coerce the result to a single JSON object",
+		Details: strPtr("The result contains 0 rows"),
+		Hint:    nil,
+		Status:  http.StatusNotFound,
+	}
+}
+
+func MultipleRows() *APIError {
+	return &APIError{
+		Code:    "PGRST116",
+		Message: "Cannot coerce the result to a single JSON object",
+		Details: strPtr("The result contains more than 1 row"),
+		Hint:    nil,
+		Status:  http.StatusNotFound,
+	}
+}
+
+func EmbedNotSupported() *APIError {
+	return &APIError{
+		Code:    "PGRST200",
+		Message: "Embedded resources are not supported",
+		Details: nil,
+		Hint:    strPtr("Use flat column names in select= without nested ( ) syntax"),
+		Status:  http.StatusBadRequest,
+	}
+}
+
+func UnsupportedOperation(msg string) *APIError {
+	return &APIError{
+		Code:    "PGRST000",
+		Message: msg,
+		Details: nil,
+		Hint:    nil,
+		Status:  http.StatusBadRequest,
+	}
+}
+
+// DriverOperationNotSupported maps unsupported driver operations to PostgREST-shaped errors.
+func DriverOperationNotSupported(op, protocol string) *APIError {
+	status := http.StatusBadRequest
+	switch op {
+	case "insert", "update", "delete", "upsert":
+		status = http.StatusMethodNotAllowed
+	}
+	return &APIError{
+		Code:    "PGRST000",
+		Message: fmt.Sprintf("%s is not supported for protocol %q", op, protocol),
+		Details: nil,
+		Hint:    strPtr("See /rest/v1/ OpenAPI and docs/drivers/ for protocol capabilities"),
+		Status:  status,
+	}
+}
+
 func InternalError(err error) *APIError {
 	msg := "Internal server error"
 	if err != nil {
@@ -152,6 +209,13 @@ func MapError(err error, ctx ErrorContext) *APIError {
 	case isJSONSyntaxError(err):
 		return InvalidBody(err)
 	default:
+		var opErr *errkind.OpNotSupported
+		if errors.As(err, &opErr) {
+			return DriverOperationNotSupported(opErr.Operation, opErr.Protocol)
+		}
+		if strings.Contains(err.Error(), "not supported") {
+			return UnsupportedOperation(err.Error())
+		}
 		return &APIError{
 			Code:    "PGRST000",
 			Message: err.Error(),

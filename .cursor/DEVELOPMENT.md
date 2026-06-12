@@ -6,48 +6,66 @@ Architecture, driver groups, and store modes: [docs/](../docs/README.md). This f
 
 ```bash
 cp .env.example .env          # DATASPAN_VAULT_KEY, DATABASE_URL
-cp drivers.yaml.example drivers.yaml   # only when WRAPPER_STORE_MODE=file
+cp drivers.yaml.example drivers.yaml   # only when DATASPAN_STORE_MODE=file
 ```
 
 | Variable | Description |
 |----------|-------------|
-| `WRAPPER_STORE_MODE` | `db` (default) or `file` (`postgres` is legacy alias for `db`) |
-| `WRAPPER_DRIVERS_FILE` | file mode path, default `./drivers.yaml` |
+| `DATASPAN_STORE_MODE` | `db` (default) or `file` |
+| `DATASPAN_DRIVERS_FILE` | file mode path, default `./drivers.yaml` |
 | `DATABASE_URL` / `DATABASE_DSN` | db mode Meta DB DSN (postgres / mysql / sqlite) |
 | `DATASPAN_VAULT_KEY` | credential encryption master key |
+| `DATASPAN_ADMIN_KEY` | optional admin API key (`X-Api-Key` or `Authorization: Bearer`); unset = open |
+| `DATASPAN_AUTOMIGRATE` | db mode GORM migrate on startup (default on; set `0` for multi-replica) |
+| `DATASPAN_META_CACHE_TTL` | optional Engine resolve cache (e.g. `5s`) |
 
 ## Start
 
 ```bash
 make postgres-up                # db mode with compose postgres service
-make migrate                    # db mode, GORM AutoMigrate
-make run                        # :3020
+make run                        # :3020, AutoMigrate on startup (db mode)
 make test
 ```
 
-File mode: `WRAPPER_STORE_MODE=file make run` (no postgres / migrate).
+File mode: `DATASPAN_STORE_MODE=file make run` (no postgres).
 
 Driver tests: `go test ./internal/driver/http/... ./internal/driver/file/... -v`
 
-## Admin API examples (db mode)
+## Admin API examples (db mode only)
 
 ```bash
 BASE=http://localhost:3020
 
-curl -s -X POST "$BASE/api/credentials" \
+# Option A: inline credential on server create
+curl -s -X POST "$BASE/admin/api/servers" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"partner_api","protocol":"http","credential":{"apiKey":"secret"},"options":{"endpoint":"https://api.example.com","auth":{"type":"API_KEY","options":{"label":"X-Api-Key"}}}}'
+
+# Option B: separate credential
+curl -s -X POST "$BASE/admin/api/credentials" \
   -H 'Content-Type: application/json' \
   -d '{"name":"partner","data":{"apiKey":"secret"}}'
 
-curl -s -X POST "$BASE/api/servers" \
+curl -s -X POST "$BASE/admin/api/servers" \
   -H 'Content-Type: application/json' \
-  -d '{"name":"partner_api","protocol":"http","credentialRef":"<uuid>","options":{"endpoint":"https://api.example.com","auth":{"type":"API_KEY","options":{"label":"X-Api-Key"}}}}'
+  -d '{"name":"partner_api","protocol":"http","credentialRef":"<uuid>","options":{"endpoint":"https://api.example.com"}}'
 
-curl -s -X POST "$BASE/api/tables" \
+curl -s -X POST "$BASE/admin/api/tables" \
   -H 'Content-Type: application/json' \
   -d '{"serverName":"partner_api","tableName":"orders","remoteName":"orders","keyColumns":["id"],"columns":[{"name":"id"},{"name":"amount","remoteName":"total_amount"}]}'
 ```
 
-File-mode equivalent: `drivers.yaml.example` (credentials inline on `servers`).
+File mode: Admin API returns 404; use `drivers.yaml` instead.
+
+## Observability (optional)
+
+| Variable | Description |
+|----------|-------------|
+| `DATASPAN_METRICS=1` | Prometheus metrics at `GET /metrics` |
+| `DATASPAN_OTEL=1` | OpenTelemetry HTTP instrumentation |
+| `DATASPAN_REQUEST_TIMEOUT` | e.g. `60s` |
+| `DATASPAN_RATE_LIMIT_RPS` | global rate limit (0 = off) |
+| `DATASPAN_BREAKER_MAX_FAILS` | circuit breaker threshold for driver init |
 
 ## PostgREST errors (data API)
 
@@ -62,7 +80,7 @@ File-mode equivalent: `drivers.yaml.example` (credentials inline on `servers`).
 }
 ```
 
-Admin API (`/api/*`) still uses `{"error":"..."}`.
+Admin API (`/admin/api/*`, db mode) uses `{"error":"..."}`.
 
 ## Supabase JS client
 
@@ -102,8 +120,9 @@ Merging to `main` tags `v$(cat VERSION)` and triggers GitHub Release (convert CL
 ## Migrations
 
 - Schema: GORM models in `internal/models/entities.go`
-- `make migrate` / `make migrate-down` (db store only; requires `DATABASE_URL` or `DATABASE_DSN`)
-- Server does not auto-migrate on startup
+## Meta DB (db mode)
+
+GORM `AutoMigrate` runs automatically when the **server** opens the Meta DB (`internal/store/db`). Entity models: `internal/models/entities.go`.
 
 ## Common pitfalls
 

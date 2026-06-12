@@ -60,6 +60,13 @@ func New(ctx context.Context, srv models.Server, cred map[string]any) (driver.Dr
 	return &Driver{rdb: client}, nil
 }
 
+func (d *Driver) Close() error {
+	if d.rdb != nil {
+		return d.rdb.Close()
+	}
+	return nil
+}
+
 func (d *Driver) tableOpts(resolved *models.ResolvedTable) (prefix, keyType string) {
 	topts, _ := models.ParseServerOptions[models.RedisTableOptions](resolved.Table.Options)
 	prefix = strings.TrimSpace(topts.KeyPrefix)
@@ -234,7 +241,7 @@ func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, err
 }
 
 func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, error) {
-	return nil, fmt.Errorf("redis driver: invoke not supported")
+	return nil, driver.OpNotSupported(driver.OpInvoke, models.ProtocolRedis)
 }
 
 func keyFromRow(row map[string]any, keyCols []string) string {

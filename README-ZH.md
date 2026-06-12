@@ -12,10 +12,10 @@
 
 ```bash
 cp .env.example .env          # DATASPAN_VAULT_KEY=$(openssl rand -base64 32)
-make postgres-up && make migrate && make run
+make postgres-up && make run
 ```
 
-- Swagger UI（动态 OpenAPI）：http://localhost:3020/swagger/
+- 动态 OpenAPI：`GET /rest/v1/`（`application/openapi+json`）
 
 Docker 全栈部署见 [deploy/](deploy/README.md)（`make compose-up`）。
 
@@ -39,10 +39,12 @@ Docker 全栈部署见 [deploy/](deploy/README.md)（`make compose-up`）。
 
 查询数据前需先注册元数据：
 
-- `POST /api/credentials` — 加密存储凭据
-- `POST /api/servers` — Foreign Server + 协议
-- `POST /api/tables` — 表与列映射（`name` → `remote_name`）
-- `POST /api/functions` — RPC 映射
+注册元数据（**仅 db 模式**；file 模式用 `drivers.yaml`）：
+
+- `POST /admin/api/credentials` — 加密存储凭据（或在 `POST /admin/api/servers` 内联 `credential`）
+- `POST /admin/api/servers` — Foreign Server + 协议
+- `POST /admin/api/tables` — 表与列映射（`name` → `remote_name`）
+- `POST /admin/api/functions` — RPC 映射
 
 协议与选型见 [docs/drivers.md](docs/drivers.md)。
 

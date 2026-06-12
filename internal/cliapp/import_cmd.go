@@ -23,7 +23,7 @@ func runImport(args []string) int {
 	endpoint := fs.String("endpoint", "", "http endpoint override for openapi")
 	schema := fs.String("schema", "public", "default schema for sql import")
 	mode := fs.String("mode", "replace", "store import mode: replace or merge")
-	apply := fs.Bool("apply", false, "import into store (WRAPPER_STORE_MODE / .env)")
+	apply := fs.Bool("apply", false, "import into store (DATASPAN_STORE_MODE / .env)")
 	_ = fs.Parse(args)
 	if fs.NArg() > 0 {
 		return exitUsage(fmt.Sprintf("import: unknown arguments: %s", strings.Join(fs.Args(), " ")))

@@ -1,155 +1,63 @@
 # Protocol drivers
 
-Drivers adapt **remote data sources** to the unified API. After registering `servers.protocol` via Admin API, the engine instantiates the driver with `driver.New(protocol)`.
+Drivers adapt **remote data sources** to the unified Data API. Register via Admin API (`POST /admin/api/servers`, db mode) or [`drivers.yaml`](../drivers.yaml.example) (`servers[].protocol`).
 
-Registry: `internal/driver/registry.go` (each driver calls `driver.Register` in `init()`).
+Registry: `internal/driver/registry.go` · **Per-driver docs**: [`drivers/`](drivers/README.md)
 
-## Where metadata comes from (store mode)
+## Store mode
 
-Drivers are registered in code; Foreign Server / Table **configuration** is loaded per store mode:
+| `DATASPAN_STORE_MODE` | Config source |
+|----------------------|---------------|
+| `db` (default) | Meta DB + Admin API |
+| `file` | `drivers.yaml` |
 
-| `WRAPPER_STORE_MODE` | Config source | Typical use |
-|----------------------|---------------|-------------|
-| `postgres` (default) | Meta DB + Admin API | Production, dynamic registration |
-| `file` | [`drivers.yaml`](../drivers.yaml.example) | Local dev, GitOps-style config |
+See [store.md](store.md).
 
-```bash
-WRAPPER_STORE_MODE=file
-WRAPPER_DRIVERS_FILE=./drivers.yaml
-cp drivers.yaml.example drivers.yaml
-```
-
-YAML selects drivers via `servers[].protocol`. See [store.md](store.md) and [`drivers.yaml.example`](../drivers.yaml.example).
-
-## Overview
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  HTTP generic layer                                          │
-│  http — any REST / PostgREST-style upstream                   │
-└─────────────────────────────────────────────────────────────┘
-         ▲ delegates
-┌────────┴────────┐
-│  HTTP presets    │  notion, firebase, airtable, sheets
-└─────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│  Native protocols                                            │
-│  postgres · mysql · mongo · redis                            │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│  File / object layer                                         │
-│  file (local dir) · s3 (object storage)                      │
-└─────────────────────────────────────────────────────────────┘
+HTTP generic     http
+HTTP presets     notion · firebase · airtable · sheets  → httpwrap → http
+Native protocols postgres · mysql · mongo · redis
+File / object    file · s3
 ```
 
-## 1. HTTP generic — `http`
+## Driver index
 
-**Use when**
-
-- Custom REST APIs, internal microservices
-- Any third-party HTTP API (Stripe, GitHub, ERP, etc.)
-- Upstream is already PostgREST or compatible
-
-**Why prefer `http`**
-
-No dedicated driver per SaaS. Configure `endpoint`, `auth`, `headers`, and `remote_name` column mapping.
-
-```json
-{
-  "name": "partner_api",
-  "protocol": "http",
-  ...
-}
-```
-
-File-mode YAML equivalent: `partner_api` in `drivers.yaml.example`.
-
-**Capabilities**: Select / Insert / Update / Delete / Invoke (RPC)
-
-**Auth types** (`options.auth.type`): `NONE` · `BASIC` · `API_KEY` · `BEARER_TOKEN` · `CLIENT_CREDENTIALS` · `UNIVERSAL`
-
-**Code**: `internal/driver/http/` — tests: `go test ./internal/driver/http/... -v`
-
----
-
-## 2. HTTP presets — via `httpwrap`
-
-Pre-fills endpoint, headers, and Bearer rules for common SaaS; still uses `http` underneath.
-
-| protocol | Default endpoint | Credential fields | Code |
-|----------|------------------|---------------------|------|
-| `notion` | `https://api.notion.com/v1` | `token` / `integrationToken` | `notion/` |
-| `firebase` | Firestore REST (from `projectId`) | `accessToken` / `token` | `firebase/` |
-| `airtable` | `https://api.airtable.com/v0` | `token` / `personalAccessToken` | `airtable/` |
-| `sheets` | `https://sheets.googleapis.com/v4` | `accessToken` / `token` | `sheets/` |
-
-Wrapper: `internal/driver/httpwrap/wrap.go` → `NewHTTPDriver()` merges defaults then calls `http.New()`.
-
-If presets do not match your upstream, use **`protocol: http`** with a manual endpoint.
-
----
-
-## 3. Native protocols
-
-Direct database or KV access (no HTTP hop).
-
-| protocol | Description | Main options | CRUD | RPC |
-|----------|-------------|--------------|------|-----|
-| `postgres` | PostgreSQL | `dsn`, `schema?` | ✓ | ✗ |
-| `mysql` | MySQL | `dsn`, `database?` | ✓ | ✗ |
-| `mongo` | MongoDB | `uri`, `database`; table: `collection` | ✓ | ✗ |
-| `redis` | Redis | `addr`/`url`, `db?`; table: `keyPrefix`, `type` | ✓ | ✗ |
-
-See each driver source or [DEVELOPMENT.md](../.cursor/DEVELOPMENT.md) for credential fields.
-
----
-
-## 4. File / object layer
-
-Read-only or limited writes for static datasets and object files.
-
-| protocol | Description | Main options | Phase 1 |
-|----------|-------------|--------------|---------|
-| `file` | Local CSV / JSON / NDJSON / YAML / XLSX | `rootPath`; table: `format` | **SELECT only** |
-| `s3` | AWS S3 objects | `bucket`, `region?`; table: `prefix`, `format` | **SELECT only** |
-
-Local **YAML / Excel** tabular files use the `file` driver with `format`. **Google Sheets / Airtable** are online APIs — use `sheets` / `airtable` presets (HTTP underneath).
-
-**file driver mapping**
-
-| Field | Role |
-|-------|------|
-| `schema` | Metadata namespace (`Accept-Profile` / `Content-Profile`); unrelated to disk layout |
-| `name` | Logical table name; for xlsx, **equals sheet name** |
-| `remoteName` | File path relative to `rootPath`; defaults to `name` |
-| `options.format` | File format; inferred from extension if omitted |
-
-Large files are read fully into memory — use `limit` in production.
-
----
+| protocol | Doc | Summary |
+|----------|-----|---------|
+| `http` | [drivers/http.md](drivers/http.md) | Any REST / PostgREST upstream |
+| `notion` | [drivers/notion.md](drivers/notion.md) | Notion API preset |
+| `firebase` | [drivers/firebase.md](drivers/firebase.md) | Firestore REST preset |
+| `airtable` | [drivers/airtable.md](drivers/airtable.md) | Airtable API preset |
+| `sheets` | [drivers/sheets.md](drivers/sheets.md) | Google Sheets API preset |
+| `postgres` | [drivers/postgres.md](drivers/postgres.md) | PostgreSQL |
+| `mysql` | [drivers/mysql.md](drivers/mysql.md) | MySQL |
+| `mongo` | [drivers/mongo.md](drivers/mongo.md) | MongoDB |
+| `redis` | [drivers/redis.md](drivers/redis.md) | Redis |
+| `file` | [drivers/file.md](drivers/file.md) | Local CSV/JSON/YAML/XLSX |
+| `s3` | [drivers/s3.md](drivers/s3.md) | AWS S3 objects |
 
 ## Selection guide
 
-| Need | Recommendation |
-|------|----------------|
+| Need | Use |
+|------|-----|
 | Any REST API | **`http`** |
-| Notion / Firestore / Airtable / Sheets with presets | `notion` / `firebase` / `airtable` / `sheets` |
-| Direct PG / MySQL / Mongo / Redis | matching native protocol |
-| Local CSV / YAML / Excel / S3 static files | `file` / `s3` |
-| New SaaS without a dedicated driver | **`http`** + credential + `remote_name` columns |
+| Notion / Firestore / Airtable / Sheets | matching preset, or **`http`** |
+| Direct PG / MySQL / Mongo / Redis | native protocol |
+| Local files / S3 static data | `file` / `s3` |
+| New SaaS | **`http`** + auth + `remote_name` |
 
 ## Adding a driver
 
 1. Implement `driver.Driver` in `internal/driver/<name>/`
 2. `init()` → `driver.Register(models.ProtocolXxx, New)`
-3. Blank import in `cmd/server/main.go`: `_ "github.com/monoposer/dataspan/internal/driver/<name>"`
-4. For REST-only differences, **prefer `httpwrap`** instead of duplicating CRUD
-5. Add `models.ProtocolXxx` constant in `internal/models/models.go`
-6. Add tests (see `http`, `file`)
+3. Blank import in `cmd/server/main.go`
+4. REST-only SaaS → prefer **`httpwrap`** ([notion](drivers/notion.md) as template)
+5. Add `models.Protocol` constant + [driver doc](drivers/README.md)
+6. Tests (see `internal/driver/http`, `file`)
 
-## Driver interface
+## Interface
 
 ```go
 type Driver interface {

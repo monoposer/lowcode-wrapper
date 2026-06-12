@@ -8,19 +8,19 @@ PostgREST-style **sidecar** (not a PostgreSQL FDW extension): metadata store, en
 
 ```
 Client → /rest/v1/{table} (Accept-Profile / Content-Profile) | /rest/v1/rpc/{fn}
-  → internal/api/postgrest.go
+  → internal/api/rest/handler.go
   → internal/postgrest/query.go
-  → internal/service/engine.go
+  → internal/engine/engine.go
   → internal/store (ResolveTable)
   → internal/driver/*
 ```
 
-Schema introspection: Admin API (`/api/servers`, `/api/tables`, …). OpenAPI: `GET /` or `/rest/v1/` → `internal/postgrest/openapi.go`.
+Schema introspection: Admin API (`/admin/api/servers`, `/admin/api/tables`, …). OpenAPI: `GET /` or `/rest/v1/` → `internal/postgrest/openapi.go`.
 
 ## Metadata registration (db mode / Admin API)
 
 ```
-POST /api/servers → POST /api/tables → (optional) POST /api/functions
+POST /admin/api/servers → POST /admin/api/tables → (optional) POST /admin/api/functions
 ```
 
 File mode: edit [`drivers.yaml`](../drivers.yaml.example); see [store.md](store.md).
@@ -29,9 +29,9 @@ File mode: edit [`drivers.yaml`](../drivers.yaml.example); see [store.md](store.
 
 | Layer | Packages |
 |-------|----------|
-| Entry | `cmd/server`, `cmd/migrate`, `cmd/cli` |
-| HTTP | `internal/api` |
-| Orchestration | `internal/service` |
+| Entry | `cmd/server`, `cmd/cli` |
+| HTTP | `internal/api` (`auth`, `admin`, `rest`), `internal/httpx` |
+| Orchestration | `internal/engine` |
 | Query | `internal/postgrest` |
 | Metadata | `internal/store` |
 | Drivers | `internal/driver` |

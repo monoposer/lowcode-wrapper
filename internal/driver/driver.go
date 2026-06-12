@@ -11,6 +11,7 @@ type SelectRequest struct {
 	Resolved *models.ResolvedTable
 	Select   []string
 	Filters  []postgrest.Filter
+	OrGroups [][]postgrest.Filter
 	Order    []postgrest.OrderSpec
 	Limit    int
 	Offset   int
@@ -20,6 +21,7 @@ type RowRequest struct {
 	Resolved             *models.ResolvedTable
 	Row                  map[string]any
 	Filters              []postgrest.Filter
+	OrGroups             [][]postgrest.Filter
 	PreferRepresentation bool
 	PreferUpsert         bool
 	Returning            []string
@@ -28,6 +30,7 @@ type RowRequest struct {
 type DeleteRequest struct {
 	Resolved *models.ResolvedTable
 	Filters  []postgrest.Filter
+	OrGroups [][]postgrest.Filter
 }
 
 type InvokeRequest struct {

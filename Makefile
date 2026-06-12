@@ -2,7 +2,7 @@ BINARY := bin/server
 MAIN   := ./cmd/server
 PORT   ?= 3020
 
-.PHONY: run start build clean check test e2e migrate migrate-up migrate-down docker-build docker-build-cli build-cli generate-types version version-next version-bump version-set compose-up compose-down postgres-up
+.PHONY: run start build clean check test e2e docker-build docker-build-cli build-cli generate-types version version-next version-bump version-set compose-up compose-down postgres-up
 
 CLI_BINARY := bin/dataspan
 CLI_IMAGE      ?= dataspan-cli:local
@@ -31,7 +31,6 @@ clean:
 
 check:
 	go build -ldflags="$(LDFLAGS)" -o /dev/null $(MAIN)
-	go build -ldflags="$(LDFLAGS)" -o /dev/null ./cmd/migrate
 	go build -ldflags="$(LDFLAGS)" -o /dev/null ./cmd/cli
 
 test:
@@ -39,12 +38,6 @@ test:
 
 e2e:
 	go test ./e2e/ -v
-
-migrate migrate-up:
-	@if [ -f .env ]; then set -a && . ./.env && set +a; fi; go run ./cmd/migrate up
-
-migrate-down:
-	@if [ -f .env ]; then set -a && . ./.env && set +a; fi; go run ./cmd/migrate down
 
 docker-build:
 	docker build \

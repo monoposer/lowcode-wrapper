@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +25,14 @@ func New(vault *auth.Vault, cfg Config) (*Store, error) {
 	gdb, err := Open(cfg.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if AutoMigrateEnabledFromEnv() {
+		if err := AutoMigrate(context.Background(), gdb); err != nil {
+			if sqlDB, dbErr := gdb.DB(); dbErr == nil {
+				sqlDB.Close()
+			}
+			return nil, fmt.Errorf("auto migrate: %w", err)
+		}
 	}
 	return &Store{db: gdb, vault: vault}, nil
 }
@@ -112,6 +121,20 @@ func (s *Store) ResolveCredential(ctx context.Context, ref uuid.UUID) (map[strin
 func (s *Store) CreateServer(ctx context.Context, req models.CreateServerRequest) (*models.Server, error) {
 	if req.Name == "" || req.Protocol == "" {
 		return nil, fmt.Errorf("name and protocol are required")
+	}
+	if req.CredentialRef == nil && len(req.Credential) > 0 {
+		credName := strings.TrimSpace(req.CredentialName)
+		if credName == "" {
+			credName = req.Name + "-credential"
+		}
+		cred, err := s.CreateCredential(ctx, credName, req.Credential)
+		if err != nil {
+			return nil, err
+		}
+		req.CredentialRef = &cred.ID
+	}
+	if req.CredentialRef != nil && len(req.Credential) > 0 {
+		return nil, fmt.Errorf("provide either credentialRef or inline credential, not both")
 	}
 	opts := req.Options
 	if len(opts) == 0 {

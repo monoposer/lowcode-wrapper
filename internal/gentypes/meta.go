@@ -15,7 +15,7 @@ import (
 	"github.com/monoposer/dataspan/internal/models"
 )
 
-// MetaClient loads schema metadata from the Admin API (/api/*).
+// MetaClient loads schema metadata from the Admin API (/admin/api/*).
 type MetaClient struct {
 	BaseURL string
 	APIKey  string
@@ -71,11 +71,11 @@ func (c *MetaClient) Fetch(ctx context.Context, schemas []string) (*SchemaSnapsh
 	}
 
 	var tables []models.Table
-	if err := c.getJSON(ctx, base+"/api/tables", &tables); err != nil {
+	if err := c.getJSON(ctx, base+"/admin/api/tables", &tables); err != nil {
 		return nil, fmt.Errorf("list tables: %w", err)
 	}
 	var functions []models.Function
-	if err := c.getJSON(ctx, base+"/api/functions", &functions); err != nil {
+	if err := c.getJSON(ctx, base+"/admin/api/functions", &functions); err != nil {
 		return nil, fmt.Errorf("list functions: %w", err)
 	}
 
@@ -125,7 +125,7 @@ func (c *MetaClient) Fetch(ctx context.Context, schemas []string) (*SchemaSnapsh
 
 func (c *MetaClient) listColumns(ctx context.Context, base string, tableID uuid.UUID) ([]ColumnMeta, error) {
 	var cols []models.Column
-	if err := c.getJSON(ctx, fmt.Sprintf("%s/api/tables/%s/columns", base, tableID), &cols); err != nil {
+	if err := c.getJSON(ctx, fmt.Sprintf("%s/admin/api/tables/%s/columns", base, tableID), &cols); err != nil {
 		return nil, err
 	}
 	out := make([]ColumnMeta, len(cols))

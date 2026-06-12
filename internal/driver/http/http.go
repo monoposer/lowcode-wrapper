@@ -55,6 +55,13 @@ func New(ctx context.Context, srv models.Server, cred map[string]any) (driver.Dr
 	}, nil
 }
 
+func (d *Driver) Close() error {
+	if d.httpClient != nil {
+		d.httpClient.CloseIdleConnections()
+	}
+	return nil
+}
+
 func (d *Driver) resourcePath(schema, table string) string {
 	t := models.RemoteTableName(models.Table{TableName: table, RemoteName: table})
 	if schema != "" && schema != "public" {

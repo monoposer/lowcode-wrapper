@@ -93,7 +93,7 @@ func (d *Driver) Select(ctx context.Context, req driver.SelectRequest) ([]map[st
 	if err != nil {
 		return nil, err
 	}
-	rows = applyFilters(rows, postgrest.MapFilters(req.Filters, req.Resolved.Columns))
+	rows = applyFilters(rows, postgrest.MapFilters(req.Filters, req.Resolved.Columns), mapOrGroups(req.OrGroups, req.Resolved.Columns))
 	rows = applySelect(rows, req.Select)
 	if req.Offset > 0 && req.Offset < len(rows) {
 		rows = rows[req.Offset:]
@@ -107,23 +107,23 @@ func (d *Driver) Select(ctx context.Context, req driver.SelectRequest) ([]map[st
 }
 
 func (d *Driver) Insert(ctx context.Context, req driver.RowRequest) (map[string]any, error) {
-	return nil, fmt.Errorf("file driver: insert not supported in phase 1")
+	return nil, driver.ErrNotSupported
 }
 
 func (d *Driver) Update(ctx context.Context, req driver.RowRequest) (int, error) {
-	return 0, fmt.Errorf("file driver: update not supported")
+	return 0, driver.ErrNotSupported
 }
 
 func (d *Driver) Upsert(ctx context.Context, req driver.RowRequest) (bool, map[string]any, error) {
-	return false, nil, fmt.Errorf("file driver: upsert not supported")
+	return false, nil, driver.ErrNotSupported
 }
 
 func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, error) {
-	return 0, fmt.Errorf("file driver: delete not supported")
+	return 0, driver.ErrNotSupported
 }
 
 func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, error) {
-	return nil, fmt.Errorf("file driver: invoke not supported")
+	return nil, driver.ErrNotSupported
 }
 
 func readCSVFile(path string) ([]map[string]any, error) {
@@ -256,43 +256,28 @@ func readNDJSONFile(path string) ([]map[string]any, error) {
 	return rows, nil
 }
 
-func applyFilters(rows []map[string]any, filters []postgrest.Filter) []map[string]any {
-	if len(filters) == 0 {
+func applyFilters(rows []map[string]any, filters []postgrest.Filter, orGroups [][]postgrest.Filter) []map[string]any {
+	if len(filters) == 0 && len(orGroups) == 0 {
 		return rows
 	}
 	var out []map[string]any
 	for _, row := range rows {
-		if matchFilters(row, filters) {
+		if postgrest.MatchQuery(row, filters, orGroups) {
 			out = append(out, row)
 		}
 	}
 	return out
 }
 
-func matchFilters(row map[string]any, filters []postgrest.Filter) bool {
-	for _, f := range filters {
-		val, ok := row[f.Column]
-		sval := fmt.Sprint(val)
-		switch f.Op {
-		case postgrest.OpEq:
-			if !ok || sval != f.Value {
-				return false
-			}
-		case postgrest.OpNeq:
-			if ok && sval == f.Value {
-				return false
-			}
-		case postgrest.OpIs:
-			if f.Value == "null" && ok && val != nil {
-				return false
-			}
-		default:
-			if !ok || sval != f.Value {
-				return false
-			}
-		}
+func mapOrGroups(groups [][]postgrest.Filter, cols []models.Column) [][]postgrest.Filter {
+	if len(groups) == 0 {
+		return nil
 	}
-	return true
+	out := make([][]postgrest.Filter, len(groups))
+	for i, g := range groups {
+		out[i] = postgrest.MapFilters(g, cols)
+	}
+	return out
 }
 
 func applySelect(rows []map[string]any, cols []string) []map[string]any {

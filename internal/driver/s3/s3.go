@@ -156,23 +156,23 @@ func (d *Driver) finishSelect(rows []map[string]any, req driver.SelectRequest) [
 }
 
 func (d *Driver) Insert(ctx context.Context, req driver.RowRequest) (map[string]any, error) {
-	return nil, fmt.Errorf("s3 driver: insert not supported in phase 1")
+	return nil, driver.ErrNotSupported
 }
 
 func (d *Driver) Update(ctx context.Context, req driver.RowRequest) (int, error) {
-	return 0, fmt.Errorf("s3 driver: update not supported in phase 1")
+	return 0, driver.ErrNotSupported
 }
 
 func (d *Driver) Upsert(ctx context.Context, req driver.RowRequest) (bool, map[string]any, error) {
-	return false, nil, fmt.Errorf("s3 driver: upsert not supported in phase 1")
+	return false, nil, driver.ErrNotSupported
 }
 
 func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, error) {
-	return 0, fmt.Errorf("s3 driver: delete not supported in phase 1")
+	return 0, driver.ErrNotSupported
 }
 
 func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, error) {
-	return nil, fmt.Errorf("s3 driver: invoke not supported")
+	return nil, driver.ErrNotSupported
 }
 
 func extFormat(key string) string {

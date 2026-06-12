@@ -1,0 +1,263 @@
+package engine
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+
+	"github.com/monoposer/dataspan/internal/driver"
+	"github.com/monoposer/dataspan/internal/logx"
+	"github.com/monoposer/dataspan/internal/models"
+	"github.com/monoposer/dataspan/internal/observability"
+	"github.com/monoposer/dataspan/internal/postgrest"
+	"github.com/monoposer/dataspan/internal/store"
+)
+
+type Engine struct {
+	Store   store.Store
+	breaker *observability.Breaker
+	drivers *driverPool
+	meta    *metaCache
+}
+
+func NewEngine(s store.Store) *Engine {
+	cfg := observability.ConfigFromEnv()
+	return &Engine{
+		Store:   s,
+		breaker: observability.NewBreaker(cfg.BreakerMaxFail, cfg.BreakerCooldown),
+		drivers: newDriverPool(),
+		meta:    newMetaCacheFromEnv(),
+	}
+}
+
+// Close releases pooled driver connections.
+func (e *Engine) Close() {
+	if e.drivers != nil {
+		e.drivers.Close()
+	}
+}
+
+func (e *Engine) DriverFor(ctx context.Context, srv models.Server) (driver.Driver, error) {
+	cred, err := e.Store.ServerCredential(ctx, &srv)
+	if err != nil {
+		logx.Component("engine").Error("load credential", "server", srv.Name, "err", err)
+		return nil, err
+	}
+
+	drv, _, err := e.drivers.Get(ctx, srv, cred, func(ctx context.Context, srv models.Server, cred map[string]any) (driver.Driver, error) {
+		if e.breaker != nil {
+			if err := e.breaker.Allow(); err != nil {
+				return nil, err
+			}
+		}
+		d, err := driver.New(ctx, srv, cred)
+		if err != nil {
+			logx.Component("engine").Error("driver init", "server", srv.Name, "protocol", srv.Protocol, "err", err)
+			if e.breaker != nil {
+				e.breaker.Fail()
+			}
+			return nil, err
+		}
+		if e.breaker != nil {
+			e.breaker.Success()
+		}
+		return d, nil
+	})
+	return drv, err
+}
+
+func (e *Engine) logOp(ctx context.Context, op, schema, table string, resolved *models.ResolvedTable) {
+	logx.Component("engine").Log(ctx, slog.LevelDebug, "data op",
+		"op", op,
+		"schema", schema,
+		"table", table,
+		"server", resolved.Server.Name,
+		"protocol", resolved.Server.Protocol,
+	)
+}
+
+func (e *Engine) Select(ctx context.Context, schema, table string, q postgrest.Query) ([]map[string]any, error) {
+	resolved, err := e.resolveTable(ctx, schema, table)
+	if err != nil {
+		return nil, err
+	}
+	drv, err := e.DriverFor(ctx, resolved.Server)
+	if err != nil {
+		return nil, err
+	}
+	e.logOp(ctx, "select", schema, table, resolved)
+	return drv.Select(ctx, driver.SelectRequest{
+		Resolved: resolved,
+		Select:   q.Select,
+		Filters:  q.Filters,
+		OrGroups: q.OrGroups,
+		Order:    q.Order,
+		Limit:    q.Limit,
+		Offset:   q.Offset,
+	})
+}
+
+func (e *Engine) Count(ctx context.Context, schema, table string, q postgrest.Query) (int, error) {
+	resolved, err := e.resolveTable(ctx, schema, table)
+	if err != nil {
+		return 0, err
+	}
+	drv, err := e.DriverFor(ctx, resolved.Server)
+	if err != nil {
+		return 0, err
+	}
+	return driver.Count(ctx, drv, driver.SelectRequest{
+		Resolved: resolved,
+		Filters:  q.Filters,
+		OrGroups: q.OrGroups,
+	})
+}
+
+func (e *Engine) InsertMany(ctx context.Context, schema, table string, rows []map[string]any, prefer postgrest.Prefer) ([]map[string]any, error) {
+	out := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		ret, err := e.Insert(ctx, schema, table, row, prefer)
+		if err != nil {
+			return nil, err
+		}
+		if prefer.Representation && ret != nil {
+			out = append(out, ret)
+		}
+	}
+	return out, nil
+}
+
+func (e *Engine) Insert(ctx context.Context, schema, table string, row map[string]any, prefer postgrest.Prefer) (map[string]any, error) {
+	resolved, err := e.resolveTable(ctx, schema, table)
+	if err != nil {
+		return nil, err
+	}
+	drv, err := e.DriverFor(ctx, resolved.Server)
+	if err != nil {
+		return nil, err
+	}
+	e.logOp(ctx, "insert", schema, table, resolved)
+	req := driver.RowRequest{
+		Resolved:             resolved,
+		Row:                  row,
+		PreferRepresentation: prefer.Representation,
+		PreferUpsert:         prefer.Upsert,
+	}
+	if prefer.Upsert {
+		created, ret, err := drv.Upsert(ctx, req)
+		if err != nil {
+			return nil, driver.WrapNotSupported(driver.OpUpsert, resolved.Server.Protocol, err)
+		}
+		_ = created
+		return ret, nil
+	}
+	ret, err := drv.Insert(ctx, req)
+	return ret, driver.WrapNotSupported(driver.OpInsert, resolved.Server.Protocol, err)
+}
+
+func (e *Engine) Update(ctx context.Context, schema, table string, q postgrest.Query, row map[string]any) (int, error) {
+	resolved, err := e.resolveTable(ctx, schema, table)
+	if err != nil {
+		return 0, err
+	}
+	drv, err := e.DriverFor(ctx, resolved.Server)
+	if err != nil {
+		return 0, err
+	}
+	e.logOp(ctx, "update", schema, table, resolved)
+	n, err := drv.Update(ctx, driver.RowRequest{
+		Resolved: resolved,
+		Row:      row,
+		Filters:  q.Filters,
+		OrGroups: q.OrGroups,
+	})
+	return n, driver.WrapNotSupported(driver.OpUpdate, resolved.Server.Protocol, err)
+}
+
+func (e *Engine) Delete(ctx context.Context, schema, table string, q postgrest.Query) (int, error) {
+	resolved, err := e.resolveTable(ctx, schema, table)
+	if err != nil {
+		return 0, err
+	}
+	drv, err := e.DriverFor(ctx, resolved.Server)
+	if err != nil {
+		return 0, err
+	}
+	e.logOp(ctx, "delete", schema, table, resolved)
+	n, err := drv.Delete(ctx, driver.DeleteRequest{
+		Resolved: resolved,
+		Filters:  q.Filters,
+		OrGroups: q.OrGroups,
+	})
+	return n, driver.WrapNotSupported(driver.OpDelete, resolved.Server.Protocol, err)
+}
+
+func (e *Engine) InvokeRPC(ctx context.Context, schema, name string, body map[string]any, query map[string]string) (any, error) {
+	resolved, err := e.resolveFunction(ctx, schema, name)
+	if err != nil {
+		return nil, err
+	}
+	drv, err := e.DriverFor(ctx, resolved.Server)
+	if err != nil {
+		return nil, err
+	}
+
+	logx.Component("engine").Debug("rpc",
+		"schema", schema,
+		"name", name,
+		"operation", resolved.Function.Operation,
+		"server", resolved.Server.Name,
+		"protocol", resolved.Server.Protocol,
+	)
+	switch resolved.Function.Operation {
+	case "invoke":
+		result, err := drv.Invoke(ctx, driver.InvokeRequest{
+			Resolved: resolved,
+			Body:     body,
+			Query:    query,
+		})
+		return result, driver.WrapNotSupported(driver.OpInvoke, resolved.Server.Protocol, err)
+	case "select", "insert", "update", "upsert", "delete":
+		return e.invokeTableOp(ctx, resolved, body, query)
+	default:
+		return nil, fmt.Errorf("unknown function operation %q", resolved.Function.Operation)
+	}
+}
+
+func (e *Engine) invokeTableOp(ctx context.Context, rf *models.ResolvedFunction, body map[string]any, query map[string]string) (any, error) {
+	// Functions can target a table via options.tableSchema + tableName
+	opts, err := models.ParseServerOptions[struct {
+		TableSchema string `json:"tableSchema"`
+		TableName   string `json:"tableName"`
+	}](rf.Function.Options)
+	if err != nil {
+		return nil, err
+	}
+	schema := opts.TableSchema
+	if schema == "" {
+		schema = rf.Function.SchemaName
+	}
+	if opts.TableName == "" {
+		return nil, fmt.Errorf("function options.tableName required for operation %q", rf.Function.Operation)
+	}
+	q := postgrest.Query{}
+	for k, v := range query {
+		q.Filters = append(q.Filters, postgrest.Filter{Column: k, Op: postgrest.OpEq, Value: v})
+	}
+	switch rf.Function.Operation {
+	case "select":
+		return e.Select(ctx, schema, opts.TableName, q)
+	case "insert":
+		return e.Insert(ctx, schema, opts.TableName, body, postgrest.Prefer{Representation: true})
+	case "update":
+		n, err := e.Update(ctx, schema, opts.TableName, q, body)
+		return map[string]any{"affected": n}, err
+	case "delete":
+		n, err := e.Delete(ctx, schema, opts.TableName, q)
+		return map[string]any{"affected": n}, err
+	case "upsert":
+		return e.Insert(ctx, schema, opts.TableName, body, postgrest.Prefer{Representation: true, Upsert: true})
+	default:
+		return nil, fmt.Errorf("unsupported table operation %q", rf.Function.Operation)
+	}
+}

@@ -297,6 +297,20 @@ func (s *Store) CreateServer(ctx context.Context, req models.CreateServerRequest
 	if req.Name == "" || req.Protocol == "" {
 		return nil, fmt.Errorf("name and protocol are required")
 	}
+	if req.CredentialRef == nil && len(req.Credential) > 0 {
+		credName := strings.TrimSpace(req.CredentialName)
+		if credName == "" {
+			credName = req.Name + "-credential"
+		}
+		cred, err := s.CreateCredential(ctx, credName, req.Credential)
+		if err != nil {
+			return nil, err
+		}
+		req.CredentialRef = &cred.ID
+	}
+	if req.CredentialRef != nil && len(req.Credential) > 0 {
+		return nil, fmt.Errorf("provide either credentialRef or inline credential, not both")
+	}
 	opts := req.Options
 	if len(opts) == 0 {
 		opts = json.RawMessage(`{}`)

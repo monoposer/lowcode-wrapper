@@ -1,6 +1,7 @@
 package postgrest
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -35,16 +36,18 @@ type OrderSpec struct {
 }
 
 type Query struct {
-	Select  []string
-	Filters []Filter
-	Order   []OrderSpec
-	Limit   int
-	Offset  int
+	Select   []string
+	Filters  []Filter
+	OrGroups [][]Filter // OR of AND groups (from `or=(a.eq.1,b.eq.2)`)
+	Order    []OrderSpec
+	Limit    int
+	Offset   int
 }
 
 type Prefer struct {
 	Representation bool
 	Upsert         bool
+	CountExact     bool
 }
 
 func ParseQuery(values url.Values) Query {
@@ -52,9 +55,13 @@ func ParseQuery(values url.Values) Query {
 	if sel := strings.TrimSpace(values.Get("select")); sel != "" {
 		for _, part := range strings.Split(sel, ",") {
 			part = strings.TrimSpace(part)
-			if part != "" {
-				q.Select = append(q.Select, part)
+			if part == "" {
+				continue
 			}
+			if strings.Contains(part, "(") {
+				continue // validated separately via ValidateSelect
+			}
+			q.Select = append(q.Select, part)
 		}
 	}
 	if lim := strings.TrimSpace(values.Get("limit")); lim != "" {
@@ -87,7 +94,12 @@ func ParseQuery(values url.Values) Query {
 		}
 	}
 	reserved := map[string]bool{
-		"select": true, "order": true, "limit": true, "offset": true,
+		"select": true, "order": true, "limit": true, "offset": true, "or": true, "and": true,
+	}
+	if rawOr := strings.TrimSpace(values.Get("or")); rawOr != "" {
+		if groups, err := parseOrGroups(rawOr); err == nil {
+			q.OrGroups = groups
+		}
 	}
 	for key, vals := range values {
 		if reserved[key] || len(vals) == 0 {
@@ -98,6 +110,19 @@ func ParseQuery(values url.Values) Query {
 		}
 	}
 	return q
+}
+
+// ValidateSelect rejects embedded resource syntax not supported by dataspan.
+func ValidateSelect(selects []string, rawSelect string) *APIError {
+	if strings.Contains(rawSelect, "(") {
+		return EmbedNotSupported()
+	}
+	for _, s := range selects {
+		if strings.Contains(s, "(") {
+			return EmbedNotSupported()
+		}
+	}
+	return nil
 }
 
 func parseFilter(column, raw string) *Filter {
@@ -124,9 +149,76 @@ func ParsePrefer(h http.Header) Prefer {
 			p.Representation = true
 		case "resolution=merge-duplicates":
 			p.Upsert = true
+		case "count=exact", "count=exact;":
+			p.CountExact = true
+		default:
+			if strings.HasPrefix(part, "count=exact") {
+				p.CountExact = true
+			}
 		}
 	}
 	return p
+}
+
+func parseOrGroups(raw string) ([][]Filter, error) {
+	raw = strings.TrimSpace(raw)
+	if strings.HasPrefix(raw, "(") && strings.HasSuffix(raw, ")") {
+		raw = strings.TrimSpace(raw[1 : len(raw)-1])
+	}
+	if raw == "" {
+		return nil, nil
+	}
+	var groups [][]Filter
+	for _, part := range splitTopLevel(raw, ',') {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		f, err := parseFilterExpr(part)
+		if err != nil {
+			return nil, err
+		}
+		groups = append(groups, []Filter{f})
+	}
+	return groups, nil
+}
+
+func parseFilterExpr(expr string) (Filter, error) {
+	expr = strings.TrimSpace(expr)
+	for _, op := range []Op{OpEq, OpNeq, OpGt, OpGte, OpLt, OpLte, OpLike, OpIn, OpIs} {
+		marker := "." + string(op) + "."
+		if idx := strings.Index(expr, marker); idx > 0 {
+			return Filter{
+				Column: expr[:idx],
+				Op:     op,
+				Value:  expr[idx+len(marker):],
+			}, nil
+		}
+	}
+	return Filter{}, fmt.Errorf("invalid filter expression %q", expr)
+}
+
+func splitTopLevel(s string, sep rune) []string {
+	var parts []string
+	depth := 0
+	start := 0
+	for i, r := range s {
+		switch r {
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		default:
+			if r == sep && depth == 0 {
+				parts = append(parts, s[start:i])
+				start = i + 1
+			}
+		}
+	}
+	parts = append(parts, s[start:])
+	return parts
 }
 
 func FiltersToQueryValues(filters []Filter) url.Values {

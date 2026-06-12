@@ -66,6 +66,13 @@ func New(ctx context.Context, srv models.Server, cred map[string]any) (driver.Dr
 	return &Driver{db: db, database: dbName}, nil
 }
 
+func (d *Driver) Close() error {
+	if d.db != nil {
+		return d.db.Close()
+	}
+	return nil
+}
+
 func strCred(cred map[string]any, key string) string {
 	if cred == nil {
 		return ""
@@ -226,7 +233,7 @@ func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, err
 }
 
 func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, error) {
-	return nil, fmt.Errorf("mysql driver: invoke not supported")
+	return nil, driver.OpNotSupported(driver.OpInvoke, models.ProtocolMySQL)
 }
 
 func buildWhereMySQL(filters []postgrest.Filter) (string, []any) {

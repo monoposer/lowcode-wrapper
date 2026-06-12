@@ -9,7 +9,7 @@ import (
 	"github.com/monoposer/dataspan/internal/auth"
 )
 
-func TestDataAPIAuthRequiresKeys(t *testing.T) {
+func TestDataAuthRequiresKeys(t *testing.T) {
 	g := &auth.Gateway{AnonKey: "anon-key", Enabled: true}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -17,7 +17,7 @@ func TestDataAPIAuthRequiresKeys(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v1/public/orders", nil)
-	DataAPIAuth(g, next).ServeHTTP(rec, req)
+	DataAuth(g, next).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
@@ -27,7 +27,7 @@ func TestDataAPIAuthRequiresKeys(t *testing.T) {
 	}
 }
 
-func TestDataAPIAuthPassesWithAnonKey(t *testing.T) {
+func TestDataAuthPassesWithAnonKey(t *testing.T) {
 	g := &auth.Gateway{AnonKey: "anon-key", Enabled: true}
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,22 +39,22 @@ func TestDataAPIAuthPassesWithAnonKey(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/public/orders", nil)
 	req.Header.Set("apikey", "anon-key")
 	req.Header.Set("Authorization", "Bearer anon-key")
-	DataAPIAuth(g, next).ServeHTTP(rec, req)
+	DataAuth(g, next).ServeHTTP(rec, req)
 
 	if !called || rec.Code != http.StatusOK {
 		t.Fatalf("called=%v status=%d", called, rec.Code)
 	}
 }
 
-func TestDataAPIAuthSkipsAdmin(t *testing.T) {
+func TestDataAuthSkipsAdmin(t *testing.T) {
 	g := &auth.Gateway{AnonKey: "anon-key", Enabled: true}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/servers", nil)
-	DataAPIAuth(g, next).ServeHTTP(rec, req)
+	req := httptest.NewRequest(http.MethodGet, "/admin/api/servers", nil)
+	DataAuth(g, next).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d", rec.Code)

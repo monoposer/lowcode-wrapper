@@ -54,6 +54,13 @@ func New(ctx context.Context, srv models.Server, cred map[string]any) (driver.Dr
 	return &Driver{client: client, db: db}, nil
 }
 
+func (d *Driver) Close() error {
+	if d.client != nil {
+		return d.client.Disconnect(context.Background())
+	}
+	return nil
+}
+
 func (d *Driver) collection(resolved *models.ResolvedTable) (*mongo.Collection, error) {
 	topts, _ := models.ParseServerOptions[models.MongoTableOptions](resolved.Table.Options)
 	name := strings.TrimSpace(topts.Collection)
@@ -178,7 +185,7 @@ func (d *Driver) Delete(ctx context.Context, req driver.DeleteRequest) (int, err
 }
 
 func (d *Driver) Invoke(ctx context.Context, req driver.InvokeRequest) (any, error) {
-	return nil, fmt.Errorf("mongo driver: invoke not supported")
+	return nil, driver.OpNotSupported(driver.OpInvoke, models.ProtocolMongo)
 }
 
 func filtersToBSON(filters []postgrest.Filter) bson.M {

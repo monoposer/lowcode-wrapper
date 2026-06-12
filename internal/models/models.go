@@ -108,11 +108,13 @@ type CreateCredentialRequest struct {
 }
 
 type CreateServerRequest struct {
-	Name          string          `json:"name"`
-	Protocol      Protocol        `json:"protocol"`
-	Options       json.RawMessage `json:"options,omitempty"`
-	CredentialRef *uuid.UUID      `json:"credentialRef,omitempty"`
-	Enabled       *bool           `json:"enabled,omitempty"`
+	Name           string          `json:"name"`
+	Protocol       Protocol        `json:"protocol"`
+	Options        json.RawMessage `json:"options,omitempty"`
+	CredentialRef  *uuid.UUID      `json:"credentialRef,omitempty"`
+	Credential     map[string]any  `json:"credential,omitempty"`
+	CredentialName string          `json:"credentialName,omitempty"`
+	Enabled        *bool           `json:"enabled,omitempty"`
 }
 
 type UpdateServerRequest struct {
@@ -186,12 +188,12 @@ type HTTPServerOptions struct {
 	Headers  map[string]string `json:"headers,omitempty"`
 }
 
-// HTTPTableOptions applies to foreign_tables.options when server protocol is http.
+// HTTPTableOptions applies to tables.options when server protocol is http.
 type HTTPTableOptions struct {
 	Headers map[string]string `json:"headers,omitempty"`
 }
 
-// HTTPFunctionOptions applies to foreign_functions.options for http invoke.
+// HTTPFunctionOptions applies to functions.options for http invoke.
 type HTTPFunctionOptions struct {
 	Headers map[string]string `json:"headers,omitempty"`
 }

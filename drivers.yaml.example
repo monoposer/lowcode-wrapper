@@ -1,14 +1,14 @@
 # Declarative Foreign Server / Table config (file store mode)
 # cp drivers.yaml.example drivers.yaml
 #
-# WRAPPER_STORE_MODE=file loads metadata from this file.
-# WRAPPER_STORE_MODE=db uses Meta DB (GORM) + Admin API instead.
+# DATASPAN_STORE_MODE=file loads metadata from this file.
+# DATASPAN_STORE_MODE=db uses Meta DB (GORM) + Admin API instead.
 #
 # On-disk shapes differ; after load the in-memory model matches db store:
 #   file YAML: servers (inline credential) + tables + functions
 #   db:        credentials + servers + foreign_tables + ...
 #
-# WRAPPER_DRIVERS_FILE=./drivers.yaml
+# DATASPAN_DRIVERS_FILE=./drivers.yaml
 
 servers:
   # Generic HTTP — credential inline on server, no top-level credentials block

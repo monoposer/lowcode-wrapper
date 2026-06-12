@@ -10,6 +10,7 @@ import (
 )
 
 // Up applies model-driven schema migrations (GORM AutoMigrate).
+// Server startup runs the same logic via db.New; this helper is for tests and tooling.
 func Up(ctx context.Context, dsn string) error {
 	gdb, err := db.Open(dsn)
 	if err != nil {
@@ -20,10 +21,10 @@ func Up(ctx context.Context, dsn string) error {
 		return err
 	}
 	defer sqlDB.Close()
-	return gdb.WithContext(ctx).AutoMigrate(models.MetaModels()...)
+	return db.AutoMigrate(ctx, gdb)
 }
 
-// Down drops all Meta DB tables (destructive).
+// Down drops all Meta DB tables (destructive). For tests only.
 func Down(ctx context.Context, dsn string) error {
 	gdb, err := db.Open(dsn)
 	if err != nil {

@@ -10,14 +10,14 @@ import (
 	"github.com/monoposer/dataspan/internal/version"
 )
 
-// OpenAPIOptions configures generated PostgREST-style Swagger 2.0 output.
+// OpenAPIOptions configures generated OpenAPI 3.1 output.
 type OpenAPIOptions struct {
 	Host     string
 	BasePath string // e.g. /rest/v1
 	Schema   string // optional Accept-Profile filter; empty = all schemas
 }
 
-// BuildOpenAPI returns a PostgREST-compatible Swagger 2.0 document from store metadata.
+// BuildOpenAPI returns an OpenAPI 3.1 document from store metadata.
 func BuildOpenAPI(ctx context.Context, s store.Store, opts OpenAPIOptions) (map[string]any, error) {
 	tables, err := s.ListTables(ctx)
 	if err != nil {
@@ -33,6 +33,15 @@ func BuildOpenAPI(ctx context.Context, s store.Store, opts OpenAPIOptions) (map[
 		functions = filterFunctionsBySchema(functions, opts.Schema)
 	}
 
+	servers, err := s.ListServers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	protoByServer := map[string]models.Protocol{}
+	for _, srv := range servers {
+		protoByServer[srv.Name] = srv.Protocol
+	}
+
 	basePath := opts.BasePath
 	if basePath == "" {
 		basePath = "/rest/v1"
@@ -42,7 +51,7 @@ func BuildOpenAPI(ctx context.Context, s store.Store, opts OpenAPIOptions) (map[
 	}
 
 	paths := map[string]any{}
-	definitions := map[string]any{}
+	schemas := map[string]any{}
 
 	tablePathCount := map[string]int{}
 	for _, tbl := range tables {
@@ -56,18 +65,18 @@ func BuildOpenAPI(ctx context.Context, s store.Store, opts OpenAPIOptions) (map[
 			return nil, err
 		}
 		defName := definitionName(tbl)
-		definitions[defName] = tableDefinition(tbl, cols)
-		paths[pathKey] = tablePathItem(tbl, defName)
+		schemas[defName] = tableSchema(tbl, cols, protoByServer[tbl.ServerName])
+		paths[pathKey] = tablePathItem(tbl, defName, isReadOnlyProtocol(protoByServer[tbl.ServerName]))
 	}
 
 	for _, fn := range functions {
 		pathKey := fmt.Sprintf("/rpc/%s", fn.Name)
 		if pathItem, ok := paths[pathKey].(map[string]any); ok {
-			pathItem["post"] = rpcOperation(fn, pathKey)
+			pathItem["post"] = rpcOperation(fn)
 			continue
 		}
 		paths[pathKey] = map[string]any{
-			"post": rpcOperation(fn, pathKey),
+			"post": rpcOperation(fn),
 		}
 	}
 
@@ -77,20 +86,28 @@ func BuildOpenAPI(ctx context.Context, s store.Store, opts OpenAPIOptions) (map[
 	}
 
 	return map[string]any{
-		"swagger": "2.0",
+		"openapi": "3.1.0",
 		"info": map[string]any{
 			"title":       title,
 			"description": "PostgREST-style foreign data wrapper sidecar (tables, columns, functions).",
 			"version":     version.Version,
 		},
-		"host":        opts.Host,
-		"basePath":    basePath,
-		"schemes":     []string{"http", "https"},
-		"consumes":    []string{"application/json", "application/vnd.pgrst.object+json"},
-		"produces":    []string{"application/json", "application/vnd.pgrst.object+json"},
-		"paths":       paths,
-		"definitions": definitions,
+		"servers":    openAPIServers(opts.Host, basePath),
+		"paths":      paths,
+		"components": map[string]any{"schemas": schemas},
 	}, nil
+}
+
+func openAPIServers(host, basePath string) []map[string]any {
+	if host == "" {
+		return []map[string]any{
+			{"url": basePath, "description": "Dataspan data API (relative to request host)"},
+		}
+	}
+	return []map[string]any{
+		{"url": fmt.Sprintf("http://%s%s", host, basePath), "description": "HTTP"},
+		{"url": fmt.Sprintf("https://%s%s", host, basePath), "description": "HTTPS"},
+	}
 }
 
 func filterTablesBySchema(tables []models.Table, schema string) []models.Table {
@@ -127,7 +144,11 @@ func definitionName(tbl models.Table) string {
 	return tbl.SchemaName + "." + tbl.TableName
 }
 
-func tableDefinition(tbl models.Table, cols []models.Column) map[string]any {
+func schemaRef(name string) map[string]any {
+	return map[string]any{"$ref": "#/components/schemas/" + name}
+}
+
+func tableSchema(tbl models.Table, cols []models.Column, protocol models.Protocol) map[string]any {
 	props := map[string]any{}
 	required := []string{}
 	for _, col := range cols {
@@ -136,13 +157,20 @@ func tableDefinition(tbl models.Table, cols []models.Column) map[string]any {
 			required = append(required, col.Name)
 		}
 	}
+	desc := fmt.Sprintf(
+		"Foreign table %s.%s (server: %s, remote: %s, protocol: %s)",
+		tbl.SchemaName, tbl.TableName, tbl.ServerName, models.RemoteTableName(tbl), protocol,
+	)
+	if isReadOnlyProtocol(protocol) {
+		desc += " [read-only: Select only]"
+	}
 	def := map[string]any{
-		"type":       "object",
-		"properties": props,
-		"description": fmt.Sprintf(
-			"Foreign table %s.%s (server: %s, remote: %s)",
-			tbl.SchemaName, tbl.TableName, tbl.ServerName, models.RemoteTableName(tbl),
-		),
+		"type":        "object",
+		"properties":  props,
+		"description": desc,
+	}
+	if isReadOnlyProtocol(protocol) {
+		def["readOnly"] = true
 	}
 	if len(required) > 0 {
 		def["required"] = required
@@ -167,13 +195,13 @@ func columnSchema(col models.Column) map[string]any {
 	default:
 		schema["type"] = "string"
 	}
-	if format := swaggerFormat(col.DataType); format != "" {
+	if format := openAPIFormat(col.DataType); format != "" {
 		schema["format"] = format
 	}
 	return schema
 }
 
-func swaggerFormat(dataType string) string {
+func openAPIFormat(dataType string) string {
 	switch strings.ToLower(dataType) {
 	case "uuid":
 		return "uuid"
@@ -193,60 +221,56 @@ func columnDescription(col models.Column) string {
 	return ""
 }
 
-func tablePathItem(tbl models.Table, defName string) map[string]any {
+func tablePathItem(tbl models.Table, defName string, readOnly bool) map[string]any {
 	profileParam := profileHeaderParam(tbl.SchemaName)
-	return map[string]any{
+	item := map[string]any{
 		"get": map[string]any{
-			"tags":        []string{tbl.SchemaName},
-			"summary":     fmt.Sprintf("Read rows from %s", tbl.TableName),
-			"parameters":  []any{profileParam},
-			"responses":   jsonArrayResponse(defName),
-			"produces":    []string{"application/json"},
-		},
-		"post": map[string]any{
-			"tags":        []string{tbl.SchemaName},
-			"summary":     fmt.Sprintf("Insert into %s", tbl.TableName),
-			"parameters":  []any{profileParam, bodyParam(defName)},
-			"responses":   jsonObjectResponse(defName),
-			"consumes":    []string{"application/json"},
-		},
-		"patch": map[string]any{
-			"tags":        []string{tbl.SchemaName},
-			"summary":     fmt.Sprintf("Update %s", tbl.TableName),
-			"parameters":  []any{profileParam, bodyParam(defName)},
-			"responses":   affectedResponse(),
-			"consumes":    []string{"application/json"},
-		},
-		"delete": map[string]any{
-			"tags":        []string{tbl.SchemaName},
-			"summary":     fmt.Sprintf("Delete from %s", tbl.TableName),
-			"parameters":  []any{profileParam},
-			"responses":   affectedResponse(),
+			"tags":       []string{tbl.SchemaName},
+			"summary":    fmt.Sprintf("Read rows from %s", tbl.TableName),
+			"parameters": []any{profileParam},
+			"responses":  jsonArrayResponse(defName),
 		},
 	}
+	if readOnly {
+		return item
+	}
+	item["post"] = map[string]any{
+		"tags":        []string{tbl.SchemaName},
+		"summary":     fmt.Sprintf("Insert into %s", tbl.TableName),
+		"parameters":  []any{profileParam},
+		"requestBody": jsonRequestBody(defName, true),
+		"responses":   jsonObjectResponse(defName, "201", "Created"),
+	}
+	item["patch"] = map[string]any{
+		"tags":        []string{tbl.SchemaName},
+		"summary":     fmt.Sprintf("Update %s", tbl.TableName),
+		"parameters":  []any{profileParam},
+		"requestBody": jsonRequestBody(defName, true),
+		"responses":   affectedResponse(),
+	}
+	item["delete"] = map[string]any{
+		"tags":       []string{tbl.SchemaName},
+		"summary":    fmt.Sprintf("Delete from %s", tbl.TableName),
+		"parameters": []any{profileParam},
+		"responses":  affectedResponse(),
+	}
+	return item
 }
 
-func rpcOperation(fn models.Function, _ string) map[string]any {
+func isReadOnlyProtocol(p models.Protocol) bool {
+	return p == models.ProtocolFile || p == models.ProtocolS3
+}
+
+func rpcOperation(fn models.Function) map[string]any {
 	params := []any{
 		map[string]any{
 			"name":        "schema",
 			"in":          "query",
-			"type":        "string",
+			"schema":      map[string]any{"type": "string", "default": fn.SchemaName},
 			"description": fmt.Sprintf("Schema profile (default %q)", fn.SchemaName),
-			"default":     fn.SchemaName,
 		},
 	}
-	if fn.Operation == "invoke" {
-		params = append(params, map[string]any{
-			"name":     "body",
-			"in":       "body",
-			"required": false,
-			"schema": map[string]any{
-				"type": "object",
-			},
-		})
-	}
-	return map[string]any{
+	op := map[string]any{
 		"tags":        []string{fn.SchemaName},
 		"summary":     fmt.Sprintf("RPC %s (%s)", fn.Name, fn.Operation),
 		"description": fmt.Sprintf("server: %s", fn.ServerName),
@@ -254,31 +278,43 @@ func rpcOperation(fn models.Function, _ string) map[string]any {
 		"responses": map[string]any{
 			"200": map[string]any{
 				"description": "OK",
-				"schema":      map[string]any{"type": "object"},
+				"content": map[string]any{
+					"application/json": map[string]any{
+						"schema": map[string]any{"type": "object"},
+					},
+				},
 			},
 		},
-		"consumes": []string{"application/json"},
-		"produces": []string{"application/json"},
 	}
+	if fn.Operation == "invoke" {
+		op["requestBody"] = map[string]any{
+			"required": false,
+			"content": map[string]any{
+				"application/json": map[string]any{
+					"schema": map[string]any{"type": "object"},
+				},
+			},
+		}
+	}
+	return op
 }
 
 func profileHeaderParam(schema string) map[string]any {
 	return map[string]any{
 		"name":        "Accept-Profile",
 		"in":          "header",
-		"type":        "string",
+		"schema":      map[string]any{"type": "string", "default": schema},
 		"description": "Schema profile",
-		"default":     schema,
 	}
 }
 
-func bodyParam(defName string) map[string]any {
+func jsonRequestBody(defName string, required bool) map[string]any {
 	return map[string]any{
-		"name":     "body",
-		"in":       "body",
-		"required": true,
-		"schema": map[string]any{
-			"$ref": "#/definitions/" + defName,
+		"required": required,
+		"content": map[string]any{
+			"application/json": map[string]any{
+				"schema": schemaRef(defName),
+			},
 		},
 	}
 }
@@ -287,22 +323,26 @@ func jsonArrayResponse(defName string) map[string]any {
 	return map[string]any{
 		"200": map[string]any{
 			"description": "OK",
-			"schema": map[string]any{
-				"type": "array",
-				"items": map[string]any{
-					"$ref": "#/definitions/" + defName,
+			"content": map[string]any{
+				"application/json": map[string]any{
+					"schema": map[string]any{
+						"type":  "array",
+						"items": schemaRef(defName),
+					},
 				},
 			},
 		},
 	}
 }
 
-func jsonObjectResponse(defName string) map[string]any {
+func jsonObjectResponse(defName, status, description string) map[string]any {
 	return map[string]any{
-		"201": map[string]any{
-			"description": "Created",
-			"schema": map[string]any{
-				"$ref": "#/definitions/" + defName,
+		status: map[string]any{
+			"description": description,
+			"content": map[string]any{
+				"application/json": map[string]any{
+					"schema": schemaRef(defName),
+				},
 			},
 		},
 	}
@@ -312,10 +352,14 @@ func affectedResponse() map[string]any {
 	return map[string]any{
 		"200": map[string]any{
 			"description": "OK",
-			"schema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"affected": map[string]any{"type": "integer"},
+			"content": map[string]any{
+				"application/json": map[string]any{
+					"schema": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"affected": map[string]any{"type": "integer"},
+						},
+					},
 				},
 			},
 		},

@@ -15,11 +15,11 @@ func TestMetaClientFetch(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/api/tables":
+		case "/admin/api/tables":
 			_, _ = w.Write([]byte(`[{"id":"11111111-1111-1111-1111-111111111111","schemaName":"public","tableName":"orders","keyColumns":["id"],"serverName":"api"}]`))
-		case "/api/tables/" + tableID.String() + "/columns":
+		case "/admin/api/tables/" + tableID.String() + "/columns":
 			_, _ = w.Write([]byte(`[{"name":"id","dataType":"text","nullable":false,"position":1}]`))
-		case "/api/functions":
+		case "/admin/api/functions":
 			_, _ = w.Write([]byte(`[]`))
 		default:
 			http.NotFound(w, r)

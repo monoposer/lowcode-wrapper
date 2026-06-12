@@ -9,16 +9,21 @@ Go HTTP sidecar, `net/http` + JSON, **no gRPC**.
 
 ## Metadata store
 
-- `WRAPPER_STORE_MODE=db|file` — where metadata is **read from** (`postgres` is a legacy alias for `db`)
-- **db**: Meta DB via DSN (`.env` `DATABASE_URL` / `DATABASE_DSN`) + Admin API + `make migrate` (GORM AutoMigrate from `internal/models/entities.go`)
+- `DATASPAN_STORE_MODE=db|file` — where metadata is **read from**
+- **db**: Meta DB via DSN (`.env` `DATABASE_URL` / `DATABASE_DSN`) + Admin API + GORM AutoMigrate on server start
 - **file**: [`drivers.yaml`](../drivers.yaml.example) — `servers` / `tables` / `functions`; credentials **inline** on `servers[].credential` (not top-level); in-memory model matches db store after load
 - Meta DB connection lives **only in `.env`**, not in yaml
 
 ## Data plane
 
-- Admin: `/api/credentials|servers|tables|functions`
+- Admin: `/admin/api/credentials|servers|tables|functions`（db 模式；file 模式禁用）
 - Data: `/rest/v1/{table}` CRUD (`Accept-Profile` / `Content-Profile`), `/rest/v1/rpc/{fn}`
 - Columns: local `name` → remote `remote_name` (`postgrest.MapFilters` / `MapRowToRemote`)
+
+## Code layout
+
+- `internal/api/admin/` — Admin handler · `internal/api/rest/` — PostgREST data handler · `internal/api/auth.go` — gateway middleware
+- `internal/engine/` — Engine orchestration · `internal/httpx/` — shared HTTP helpers
 
 ## Drivers
 
